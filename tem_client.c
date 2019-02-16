@@ -18,7 +18,7 @@ char buffer[256];	//used for storing messages before displaying to screen or sen
 system("clear");
 
 client_socket = socket(PF_INET, SOCK_STREAM, 0);	//creates the client socket
-memset(&server_addr, '\0', sizeof(server_addr));	//overwrites the memory stored in 'server_addr' with zeros
+memset(&server_addr, '\0', sizeof(server_addr));	//overwrites any memory stored in 'server_addr' with zeros
 	
 server_addr.sin_family=AF_INET;		// specifies family of addresses (IPv4)
 server_addr.sin_port=htons(PORT);	// specifies port the server will be using 
