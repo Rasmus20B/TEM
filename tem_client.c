@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+/* This program is the client that users interact with */
 
 #define PORT 7272
 int connect_to_server(char dest_ip_addr[15]) { //connects to user specified server
