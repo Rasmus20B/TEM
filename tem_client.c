@@ -18,7 +18,7 @@ char buffer[256];	//used for storing messages before displaying to screen or sen
 
 system("clear");
 
-client_socket = socket(PF_INET, SOCK_STREAM, 0);	//creates the client socket
+client_socket = socket(PF_INET, SOCK_STREAM, 0);	//creates the TCP client socket
 memset(&server_addr, '\0', sizeof(server_addr));	//overwrites any memory stored in 'server_addr' with zeros
 	
 server_addr.sin_family=AF_INET;		// specifies family of addresses (IPv4)
@@ -35,7 +35,7 @@ else {		//if the connect function returns 0 (succeeds)
 
 	}
 
-close(client_socket);
+close(client_socket);		//closes the open socket connected to the server
 
 		return 0;
 }
