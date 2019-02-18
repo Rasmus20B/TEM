@@ -47,16 +47,16 @@ int connect_to_server(char dest_ip_addr[15]) { //connects to user specified serv
 
 int main(int argc, char** argv) {
 
-char dest_ip_addr[15];
+	char dest_ip_addr[15];
 
-if (argv[1] == NULL) { 		// if user has not entered IP address from command line
-puts("please enter the address of the server you would like to join\n\n\n\n");
-fgets(dest_ip_addr, 15, stdin);		// receives server IP address from standard input
-}
-else {		// if user has entered IP address when opening program 
-	strcpy(dest_ip_addr, argv[1]);	//copy command line argument to 'dest_ip_addr' variable 
-}
-connect_to_server(dest_ip_addr);
+	if (argv[1] == NULL) { 		// if user has not entered IP address from command line
+	puts("please enter the address of the server you would like to join\n\n\n\n");
+	fgets(dest_ip_addr, 15, stdin);		// receives server IP address from standard input
+	}
+	else {		// if user has entered IP address when opening program 
+		strcpy(dest_ip_addr, argv[1]);	//copy command line argument to 'dest_ip_addr' variable 
+	}
+	connect_to_server(dest_ip_addr);
 
 return 0;
 }
