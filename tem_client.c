@@ -22,6 +22,12 @@
 //buffer = username + message + timestamp
 //send buffer
 //
+//other option :
+//
+//create buffer structure that includes components mentioned prior, send to server, then upon receival construct the message from the structure.
+//
+//
+//
 
 int connect_to_server(char dest_ip_addr[15]) { //connects to user specified server
 	
