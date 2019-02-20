@@ -13,7 +13,15 @@
 /* This program is the client that users interact with */
 /* connects to server */
 
-
+//add quit in messaging function
+//
+//if message == \quit then
+//quit_tem();
+//
+//else
+//buffer = username + message + timestamp
+//send buffer
+//
 
 int connect_to_server(char dest_ip_addr[15]) { //connects to user specified server
 	
