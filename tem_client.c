@@ -44,6 +44,31 @@ int connect_to_server(char dest_ip_addr[15]) { //connects to user specified serv
 	return 0;
 }
 
+int sign_in(void) {
+
+	char username[20];
+	char password[20];
+
+	//receives sign in message from server (username)
+	fgets(username, 20, stdin);
+	//send username to server to verify
+	//receive reply
+
+	//if reply == NOTOK then 
+	//return -1
+	//else 
+	//return 0
+
+	//receives sign in message from server (password)
+	fgets(password, 20, stdin);
+	//send password to server to verify
+	//recieve reply
+
+	//if reply == NOTOK then 
+	//return -1
+	//else 
+	//return 0
+
 int main(int argc, char** argv) {
 
 	char dest_ip_addr[15]; 	//IP address of destination server
