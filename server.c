@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -8,6 +9,11 @@
 #include <arpa/inet.h>
 
 #define PORT 7272
+
+struct account {
+	char username[20];
+	char password[20];
+}account;
 
 void main() { 
 
@@ -18,7 +24,9 @@ void main() {
 	struct sockaddr_in new_addr;
 
 	socklen_t addr_size; 
-	char message[20];
+	char message[256];
+	
+	system("clear");
 
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
 	memset(&server_addr, '\0', sizeof(server_addr));
@@ -43,9 +51,16 @@ void main() {
 
 	new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
 	
-	fgets(message, 256, stdin);
+	fgets(message, sizeof(message), stdin);
 	send(new_socket, message, strlen(message), 0);	
-
-	
+	recv(new_socket, account.username, strlen(account.username), 0);
+	if (sizeof(account.username) > 20 || sizeof(account.username) < 1) {
+		strcpy(message, "NOTOK");
+		send(new_socket, message, strlen(message), 0);
+	}
+	else {
+		strcpy(message, "OK");
+		send(new_socket, message, strlen(message), 0);
+	}	
 }
 

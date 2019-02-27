@@ -27,17 +27,16 @@ int sign_in(int client_socket) {
 	
 	char username[20];
 	char password[20];
-	char buffer[20];
+	char buffer[256];
 	
-	//overrides any data stored in buffer
-	memset(&buffer, '\0', sizeof(buffer));
 	//receives sign in message from server (username)
-	recv(client_socket, buffer, 20, 0);
-
-	printf("server: %s\n ", buffer);
+	recv(client_socket, buffer, sizeof(buffer), 0);
+	printf("server: %s\n", buffer);
+	
+	puts("please enter your username\n");
 	fgets(username, 20, stdin);
 	//sends username to server to verify
-	send(client_socket, buffer, 20, 0);
+	send(client_socket, username, 20, 0);	
 	//receives reply
 	recv(client_socket, buffer, 20, 0);
 
@@ -45,12 +44,8 @@ int sign_in(int client_socket) {
 	if (buffer == "NOTOK") {
 		return -1;
 	}
-	else {
-		return 0;
-	}
-	//receives sign in message from server (password)
-	recv(client_socket, buffer, 20, 0);
-	printf("server: %s\n ", buffer);
+	
+	puts("please enter your password");
 	fgets(password, 20, stdin);
 	//sends password to server to verify
 	send(client_socket, buffer, 20, 0);
@@ -61,55 +56,67 @@ int sign_in(int client_socket) {
 	if (buffer == "NOTOK") {
 		return -1;
 	}
-	else {
-		return 0;
-	}
 
 }
-
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
 	
 	int client_socket;
-	struct sockaddr_in server_addr;		//initialises a 'sockaddr_in' structure called 'server_addr'
-	
-	client_socket = socket(PF_INET, SOCK_STREAM, 0);	//creates the TCP client socket
-	memset(&server_addr, '\0', sizeof(server_addr));	//overwrites any memory stored in 'server_addr'
-	
-	server_addr.sin_family=AF_INET;		// specifies family of addresses (IPv4)
-	server_addr.sin_port=htons(PORT);	// specifies port the server will be using 
-	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);	//specifies server IP address received from user
 
-	while (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	//if the connect function returns -1 (fails)
-		perror("[-] error connecting to server ");	//prints an appropriate error message
+	//initialises a 'sockaddr_in' structure called 'server_addr'
+	struct sockaddr_in server_addr;		
+	
+	//creates the TCP client socket
+	client_socket = socket(PF_INET, SOCK_STREAM, 0);	
+	//overwrites any memory stored in 'server_addr'
+	memset(&server_addr, '\0', sizeof(server_addr));	
+	// specifies family of addresses (IPv4)
+	server_addr.sin_family=AF_INET;		
+	// specifies port the server will be using
+	server_addr.sin_port=htons(PORT);	 
+	//specifies server IP address received from user
+	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);	
+	
+	//if the connect function returns -1 (fails)
+	while (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	
+		//prints an appropriate error message
+		perror("[-] error connecting to server ");	
 		return  -1;
 	}
 	printf("[+] successfully connected\n");
-
-	sign_in(client_socket);
+	
+	while(sign_in(client_socket) == -1) {
+		sign_in(client_socket);
+	}
 
 	return 0;
 }
 
-
-
 int main(int argc, char** argv) {
 
-	char dest_ip_addr[14]; 	//IP address of destination server
-	int cor_ip = -1;	// holds the return value of 'connect to server' function
+	//IP address of destination server
+	char dest_ip_addr[14]; 	
+	// holds the return value of 'connect to server' function
+	int cor_ip = -1;	
+	
+	system("clear");
 
 	while (cor_ip ==   -1) {
-		if (argv[1] == NULL) { 		// if user has not entered IP address from command line
+		// if user has not entered IP address from command line
+		if (argv[1] == NULL) { 		
 			puts("please enter the address of the server you would like to join: ");
-			fgets(dest_ip_addr, 15, stdin);		// receives server IP address from standard input
-			cor_ip = connect_to_server(dest_ip_addr);	//stores the return value of function in cor_ip so it can be reviewed before continuing
+			// receives server IP address from standard input
+			fgets(dest_ip_addr, 15, stdin);		
+			//stores the return value of function in cor_ip so it can be reviewed before continuing
+			cor_ip = connect_to_server(dest_ip_addr);	
 			}
 		else {		// if user has entered IP address when opening program 
-			strcpy(dest_ip_addr, argv[1]);	//copy command line argument to 'dest_ip_addr' variable 
-			cor_ip = connect_to_server(dest_ip_addr);	//stores the return value of function in cor_ip so it can be reviewed before continuing
+			//copy command line argument to 'dest_ip_addr' variable
+			strcpy(dest_ip_addr, argv[1]);	 
+			//stores the return value of function in cor_ip so it can be reviewed before continuing
+			cor_ip = connect_to_server(dest_ip_addr);	
 			}	
 	}
-
-return 0;
+	return 0;
 }
 	
