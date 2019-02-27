@@ -28,6 +28,48 @@
 //
 //
 //
+int sign_in(int client_socket) {
+	
+	char username[20];
+	char password[20];
+	char buffer[20];
+
+	//receives sign in message from server (username)
+	recv(client_socket, buffer, 20, 0);
+	printf("server: %s\n ", buffer);
+	fgets(username, 20, stdin);
+	//sends username to server to verify
+	send(client_socket, buffer, 20, 0);
+	//receives reply
+	recv(client_socket, buffer, 20, 0);
+
+	//if reply == NOTOK then 
+	if (buffer == "NOTOK") {
+		return -1;
+	}
+	else {
+		return 0;
+	}
+	//receives sign in message from server (password)
+
+	recv(client_socket, buffer, 20, 0);
+	printf("server: %s\n ", buffer);
+	fgets(password, 20, stdin);
+	//sends password to server to verify
+	send(client_socket, buffer, 20, 0);
+	//recieves reply
+	recv(client_socket, buffer, 20, 0);
+
+	//if reply == NOTOK then 
+	if (buffer == "NOTOK") {
+		return -1;
+	}
+	else {
+		return 0;
+	}
+
+}
+
 
 int connect_to_server(char dest_ip_addr[15]) { //connects to user specified server
 	
@@ -42,46 +84,17 @@ int connect_to_server(char dest_ip_addr[15]) { //connects to user specified serv
 	server_addr.sin_port=htons(PORT);	// specifies port the server will be using 
 	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);	//specifies server IP address received from user
 
-	if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	//if the connect function returns -1 (fails)
+	while (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	//if the connect function returns -1 (fails)
 		perror("[-] error connecting to server ");	//prints an appropriate error message
 		return  -1;
 	}
-	else {		//if the connect function returns 0 (succeeds)
+	//if the connect function returns 0 (succeeds)
 		printf("[+] successfully connected\n");
 		recv(client_socket, buffer, 256, 0);		//recieves message from server and stores it in buffer
 		printf("[+] Server : %s\n ", buffer);		//prints the server message stored in buffer
-	
-		}
-	
-	close(client_socket);		//closes the open socket connected to the server
 
+	sign_in(client_socket);
 	return 0;
-}
-
-int sign_in(void) {
-
-	char username[20];
-	char password[20];
-
-	//receives sign in message from server (username)
-	fgets(username, 20, stdin);
-	//send username to server to verify
-	//receive reply
-
-	//if reply == NOTOK then 
-	//return -1
-	//else 
-	//return 0
-
-	//receives sign in message from server (password)
-	fgets(password, 20, stdin);
-	//send password to server to verify
-	//recieve reply
-
-	//if reply == NOTOK then 
-	//return -1
-	//else 
-	//return 0
 }
 
 int main(int argc, char** argv) {
@@ -100,7 +113,6 @@ int main(int argc, char** argv) {
 			cor_ip = connect_to_server(dest_ip_addr);	//stores the return value of function in cor_ip so it can be reviewed before continuing
 			}	
 	}
-	
 
 return 0;
 }

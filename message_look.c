@@ -29,11 +29,14 @@ int main() {
 	
 	memset(buffer, '\0', sizeof(buffer)); 
 	strcat(buffer, user);
+	strcat(buffer, " : ");
 	strcat(buffer, "\t");
 	strcat(buffer, message);	
 	strcat(buffer, "\t");
 	strcat(buffer, time_buffer);
 
 	printf("%s\n", buffer);	
+
+	return 1;
 
 }
