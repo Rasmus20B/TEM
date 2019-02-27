@@ -22,20 +22,18 @@
 //buffer = username + message + timestamp
 //send buffer
 //
-//other option :
-//
-//create buffer structure that includes components mentioned prior, send to server, then upon receival construct the message from the structure.
-//
-//
-//
+
 int sign_in(int client_socket) {
 	
 	char username[20];
 	char password[20];
 	char buffer[20];
-
+	
+	//overrides any data stored in buffer
+	memset(&buffer, '\0', sizeof(buffer));
 	//receives sign in message from server (username)
 	recv(client_socket, buffer, 20, 0);
+
 	printf("server: %s\n ", buffer);
 	fgets(username, 20, stdin);
 	//sends username to server to verify
@@ -51,7 +49,6 @@ int sign_in(int client_socket) {
 		return 0;
 	}
 	//receives sign in message from server (password)
-
 	recv(client_socket, buffer, 20, 0);
 	printf("server: %s\n ", buffer);
 	fgets(password, 20, stdin);
@@ -71,14 +68,13 @@ int sign_in(int client_socket) {
 }
 
 
-int connect_to_server(char dest_ip_addr[15]) { //connects to user specified server
+int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
 	
 	int client_socket;
 	struct sockaddr_in server_addr;		//initialises a 'sockaddr_in' structure called 'server_addr'
-	char buffer[256];	//used for storing messages before displaying to screen or sending to server
-
+	
 	client_socket = socket(PF_INET, SOCK_STREAM, 0);	//creates the TCP client socket
-	memset(&server_addr, '\0', sizeof(server_addr));	//overwrites any memory stored in 'server_addr' with zeros
+	memset(&server_addr, '\0', sizeof(server_addr));	//overwrites any memory stored in 'server_addr'
 	
 	server_addr.sin_family=AF_INET;		// specifies family of addresses (IPv4)
 	server_addr.sin_port=htons(PORT);	// specifies port the server will be using 
@@ -88,18 +84,18 @@ int connect_to_server(char dest_ip_addr[15]) { //connects to user specified serv
 		perror("[-] error connecting to server ");	//prints an appropriate error message
 		return  -1;
 	}
-	//if the connect function returns 0 (succeeds)
-		printf("[+] successfully connected\n");
-		recv(client_socket, buffer, 256, 0);		//recieves message from server and stores it in buffer
-		printf("[+] Server : %s\n ", buffer);		//prints the server message stored in buffer
+	printf("[+] successfully connected\n");
 
 	sign_in(client_socket);
+
 	return 0;
 }
 
+
+
 int main(int argc, char** argv) {
 
-	char dest_ip_addr[15]; 	//IP address of destination server
+	char dest_ip_addr[14]; 	//IP address of destination server
 	int cor_ip = -1;	// holds the return value of 'connect to server' function
 
 	while (cor_ip ==   -1) {

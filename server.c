@@ -18,7 +18,7 @@ void main() {
 	struct sockaddr_in new_addr;
 
 	socklen_t addr_size; 
-	char message[256];
+	char message[20];
 
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
 	memset(&server_addr, '\0', sizeof(server_addr));
@@ -43,7 +43,7 @@ void main() {
 
 	new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
 	
-	strcpy(message, "welcome to the server");
+	fgets(message, 256, stdin);
 	send(new_socket, message, strlen(message), 0);	
 
 	
