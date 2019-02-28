@@ -52,7 +52,7 @@ void main() {
 	new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
 	
 	fgets(message, sizeof(message), stdin);
-	send(new_socket, message, strlen(message), 0);	
+	send(new_socket, message, sizeof(message), 0);	
 	recv(new_socket, account.username, strlen(account.username), 0);
 	if (sizeof(account.username) > 20 || sizeof(account.username) < 1) {
 		strcpy(message, "NOTOK");

@@ -28,11 +28,11 @@ int sign_in(int client_socket) {
 	char username[20];
 	char password[20];
 	char buffer[256];
+
+	strcpy(buffer, "sign_in");
 	
 	//receives sign in message from server (username)
-	recv(client_socket, buffer, sizeof(buffer), 0);
-	printf("server: %s\n", buffer);
-	
+
 	puts("please enter your username\n");
 	fgets(username, 20, stdin);
 	//sends username to server to verify
@@ -56,12 +56,17 @@ int sign_in(int client_socket) {
 	if (buffer == "NOTOK") {
 		return -1;
 	}
+	else {
+		return 0;
+	}
 
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
 	
 	int client_socket;
+	char buffer[256];
+	char choice;	
 
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;		
@@ -83,11 +88,27 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 		perror("[-] error connecting to server ");	
 		return  -1;
 	}
+
 	printf("[+] successfully connected\n");
-	
-	while(sign_in(client_socket) == -1) {
-		sign_in(client_socket);
+	//recieve welcome message from server along with options
+	recv(client_socket, buffer, sizeof(buffer), 0);
+	printf("server: %s\nsign in : 1\ncreate account : 2\n", buffer);	
+	//get choice from user
+	fgets(buffer, 3, stdin);		
+	while (strcmp(buffer, "0") == 1) {
+		if (strcmp(buffer,"1")== 1) {
+			while(sign_in(client_socket) == -1) {
+				sign_in(client_socket);
+			}
+		}
+		else if (strcmp(buffer, "2") == 1) {
+			//create account
+		}
+		else {
+			puts("please enter a valid choice");
+		}
 	}
+	
 
 	return 0;
 }
