@@ -65,8 +65,7 @@ int sign_in(int client_socket) {
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
 	
 	int client_socket;
-	char buffer[256];
-	char choice;	
+	char buffer[256];	
 
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;		
@@ -92,10 +91,15 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	printf("[+] successfully connected\n");
 	//recieve welcome message from server along with options
 	recv(client_socket, buffer, sizeof(buffer), 0);
+
+	//print server welcome message and menu
 	printf("server: %s\nsign in : 1\ncreate account : 2\n", buffer);	
-	//get choice from user
-	fgets(buffer, 3, stdin);		
+	
+		
+	//call sign_in function when 1 is selected, call create_account when 2 is selected, else loop
 	while (strcmp(buffer, "0") == 1) {
+		//get choice from user for use in menu
+		fgets(buffer, 3, stdin);
 		if (strcmp(buffer,"1")== 1) {
 			while(sign_in(client_socket) == -1) {
 				sign_in(client_socket);
