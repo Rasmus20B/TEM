@@ -22,6 +22,9 @@
 //buffer = username + message + timestamp
 //send buffer
 //
+int create_acc() {
+	return 0;
+}
 
 int sign_in(int client_socket) {
 	
@@ -60,7 +63,6 @@ int sign_in(int client_socket) {
 	else {
 		return 0;
 	}
-
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
@@ -107,14 +109,14 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 			}
 		}
 		else if (strcmp(buffer, "2") == 1) {
-			//create account
+			while(create_acc(client_socket) == -1) {
+				create_acc(client_socket);
+			}
 		}
 		else {
 			puts("please enter a valid choice");
 		}
 	}
-	
-
 	return 0;
 }
 
@@ -150,8 +152,7 @@ void main(int argc, char** argv) {
 			}
 			//reintialise memory in dest_ip_address
 			memset(dest_ip_addr, '\0', 15);		
-		}
-			
+		}		
 	}	
 }
 	
