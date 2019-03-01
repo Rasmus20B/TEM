@@ -83,7 +83,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);	
 	
 	//if the connect function returns -1 (fails)
-	while (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	
+	if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	
 		//prints an appropriate error message
 		perror("[-] error connecting to server ");	
 		return  -1;
@@ -121,27 +121,37 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 void main(int argc, char** argv) {
 
 	//IP address of destination server
-	char dest_ip_addr[14]; 	
+	char dest_ip_addr[15]; 	
 	// holds the return value of 'connect to server' function
 	int cor_ip = -1;	
 	
 	system("clear");
+	
+	//copy command line argument to 'dest_ip_addr' variable			
+	if (argv[1] != NULL) {
+		strcpy(dest_ip_addr, argv[1]);
+	}
 
-	while (cor_ip ==   -1) {
-		// if user has not entered IP address from command line
-		if (argv[1] == NULL) { 		
+	while (cor_ip == -1) {	
+		// if user has not entered valid IP address from command line
+		if (dest_ip_addr == NULL || strlen(dest_ip_addr) < 7 || strlen(dest_ip_addr) > 15) { 		
 			puts("please enter the address of the server you would like to join: ");
+		
 			// receives server IP address from standard input
 			fgets(dest_ip_addr, 15, stdin);		
-			//stores the return value of function in cor_ip so it can be reviewed before continuing
+			//stores the return value of 'connect to server' in cor_ip so it can be reviewed before continuing
 			cor_ip = connect_to_server(dest_ip_addr);	
 			}
-		else {		// if user has entered IP address when opening program 
-			//copy command line argument to 'dest_ip_addr' variable
-			strcpy(dest_ip_addr, argv[1]);	 
-			//stores the return value of function in cor_ip so it can be reviewed before continuing
-			cor_ip = connect_to_server(dest_ip_addr);	
-			}	
-	}
+		else {	// if user has entered IP address when opening program 	
+			//stores the return value of 'connect_to_server' in cor_ip so it can be reviewed before continuing
+			cor_ip = connect_to_server(dest_ip_addr);		
+			if (cor_ip == -1) {
+				puts("please enter a valid ip address");
+			}
+			//reintialise memory in dest_ip_address
+			memset(dest_ip_addr, '\0', 15);		
+		}
+			
+	}	
 }
 	
