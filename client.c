@@ -30,6 +30,7 @@ int sign_in(int client_socket) {
 	char buffer[256];
 
 	strcpy(buffer, "sign_in");
+	send(client_socket, buffer, 10, 0); //sends server message to initiate sign in process server-side
 	
 	//receives sign in message from server (username)
 
