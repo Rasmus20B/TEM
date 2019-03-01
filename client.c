@@ -117,7 +117,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	return 0;
 }
 
-int main(int argc, char** argv) {
+void main(int argc, char** argv) {
 
 	//IP address of destination server
 	char dest_ip_addr[14]; 	
@@ -142,6 +142,5 @@ int main(int argc, char** argv) {
 			cor_ip = connect_to_server(dest_ip_addr);	
 			}	
 	}
-	return 0;
 }
 	
