@@ -15,6 +15,8 @@ struct account {
 	char password[20];
 }account;
 
+
+
 void main() { 
 
 	int sockfd;
@@ -45,11 +47,16 @@ void main() {
 	if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
 		perror("[-] error binding socket to address");
 	}
+	else { 
+		puts("[+] socket successfully bound to port");
+	}
+	puts("please enter a welcome message\n");
 
 	listen(sockfd, 3);
 	addr_size = sizeof(new_addr);
 
 	new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
+		
 	
 	fgets(message, sizeof(message), stdin);
 	send(new_socket, message, sizeof(message), 0);	
