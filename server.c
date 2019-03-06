@@ -15,7 +15,39 @@ struct account {
 	char password[20];
 }account;
 
+int sign_in(int client_socket) {
+	
+	char message[256];
+	
+	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
+	
+	recv(client_socket, account.username, strlen(account.username), 0);
 
+	if (strlen(account.username) > 20) { 
+			strcpy(message, "NOTOK");
+			send(client_socket, message, sizeof(message), 0);
+	}else {
+		strcpy(message, "OK");
+		send(client_socket, message, sizeof(message), 0);
+	}
+
+	recv(client_socket, account.password, strlen(account.password), 0);
+	if (sizeof(account.password) > 20) {
+		strcpy(message, "NOTOK");
+		send(client_socket, message, sizeof(message),0);
+	}else {
+		strcpy(message, "OK");
+		send(client_socket, message, sizeof(message), 0);
+	}
+
+
+
+
+}
+
+int create_acc(int client_socket) {
+
+}
 
 void main() { 
 
@@ -60,14 +92,13 @@ void main() {
 	
 	fgets(message, sizeof(message), stdin);
 	send(new_socket, message, sizeof(message), 0);	
-	recv(new_socket, account.username, strlen(account.username), 0);
-	if (sizeof(account.username) > 20 || sizeof(account.username) < 1) {
-		strcpy(message, "NOTOK");
-		send(new_socket, message, strlen(message), 0);
+
+	memset(message, '\0', sizeof(message));
+
+	recv(new_socket, message, sizeof(message), 0);
+	if (strncmp(message, "sign_in", 7) == 0) {
+		sign_in(new_socket);
 	}
-	else {
-		strcpy(message, "OK");
-		send(new_socket, message, strlen(message), 0);
-	}	
+		
 }
 

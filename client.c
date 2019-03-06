@@ -32,37 +32,34 @@ int sign_in(int client_socket) {
 	char password[20];
 	char buffer[256];
 
-	strcpy(buffer, "sign_in");
-	send(client_socket, buffer, 10, 0); //sends server message to initiate sign in process server-side
-	
+
 	//receives sign in message from server (username)
 
-	puts("please enter your username\n");
+	puts("please enter your username");
 	fgets(username, 25, stdin);
 	//sends username to server to verify
-	send(client_socket, username, 20, 0);	
+	send(client_socket, username, sizeof(username), 0);	
 	//receives reply
-	recv(client_socket, buffer, 25, 0);
+	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
-	if (buffer == "NOTOK") {
+	if (strncmp(buffer, "NOTOK", 5)) {
 		return -1;
 	}
 	
 	puts("please enter your password");
-	fgets(password, 20, stdin);
+	fgets(password, 25, stdin);
 	//sends password to server to verify
-	send(client_socket, buffer, 20, 0);
+	send(client_socket, password, strlen(password), 0);
 	//recieves reply
-	recv(client_socket, buffer, 20, 0);
+	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
-	if (buffer == "NOTOK") {
+	if (strncmp(buffer, "NOTOK", 5)) {
 		return -1;
-	}
-	else {
+	}else {
 		return 0;
-	}
+		}
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
@@ -97,7 +94,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//print server welcome message and menu
-	printf("server: %s\nsign in : 1\ncreate account : 2\n", buffer);	
+	printf("server: %s\nsign in : 1\fcreate account : 2\f", buffer);	
 	
 	//reinitialise buffer
 	memset(buffer, '\0', sizeof(buffer));
@@ -106,17 +103,15 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	while (choice == 0) {
 		//get choice from user for use in menu
 		scanf(" %d", &choice);
-		if (choice == 1) {
-			while(sign_in(client_socket) == -1) {
-				sign_in(client_socket);
-			}
-		}
-		else if (choice == 2) {
-			while(create_acc(client_socket) == -1) {
-				create_acc(client_socket);
-			}
-		}
-		else {
+		if (choice == 1) {	
+			strcpy(buffer, "sign_in");
+			send(client_socket, buffer, strlen(buffer), 0); //sends server message to initiate sign in process server-side
+			sign_in(client_socket);
+		}else if (choice == 2) {	
+			strcpy(buffer, "create_acc");
+			send(client_socket, buffer, strlen(buffer), 0);
+			create_acc(client_socket);
+		}else {
 			puts("please enter a valid choice");
 			choice = 0;
 		}
@@ -147,8 +142,8 @@ void main(int argc, char** argv) {
 			fgets(dest_ip_addr, 15, stdin);		
 			//stores the return value of 'connect to server' in cor_ip so it can be reviewed before continuing
 			cor_ip = connect_to_server(dest_ip_addr);	
-			}
-		else {	// if user has entered IP address when opening program 	
+			}else {	// if user has entered IP address when opening program 	
+
 			//stores the return value of 'connect_to_server' in cor_ip so it can be reviewed before continuing
 			cor_ip = connect_to_server(dest_ip_addr);		
 			if (cor_ip == -1) {
