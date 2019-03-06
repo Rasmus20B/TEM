@@ -58,7 +58,7 @@ void main() {
 	struct sockaddr_in new_addr;
 
 	socklen_t addr_size; 
-	char message[256];
+	char message[256] = "Hello there";
 	
 	system("clear");
 
@@ -82,15 +82,11 @@ void main() {
 	else { 
 		puts("[+] socket successfully bound to port");
 	}
-	puts("please enter a welcome message\n");
-
 	listen(sockfd, 3);
 	addr_size = sizeof(new_addr);
 
 	new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
 		
-	
-	fgets(message, sizeof(message), stdin);
 	send(new_socket, message, sizeof(message), 0);	
 
 	memset(message, '\0', sizeof(message));
