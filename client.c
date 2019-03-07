@@ -33,8 +33,6 @@ int sign_in(int client_socket) {
 	char buffer[256];
 
 
-	//receives sign in message from server (username)
-
 	puts("please enter your username");
 	fgets(username, 25, stdin);
 	//sends username to server to verify
@@ -91,10 +89,8 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 
 	printf("[+] successfully connected\n");
 	//recieve welcome message from server along with options
-	recv(client_socket, buffer, sizeof(buffer), 0);
-
-	//print server welcome message and menu
-	printf("server: %s\nsign in : 1\fcreate account : 2\f", buffer);	
+	//print menu
+	printf("sign in : 1\fcreate account : 2\f");	
 	
 	//reinitialise buffer
 	memset(buffer, '\0', sizeof(buffer));
