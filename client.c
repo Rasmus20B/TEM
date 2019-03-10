@@ -26,7 +26,7 @@ int create_acc() {
 	return 0;
 }
 
-int sign_in(int client_socket) {
+int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
 	
 	char username[20];
 	char password[20];
@@ -36,9 +36,9 @@ int sign_in(int client_socket) {
 	puts("please enter your username");
 	fgets(username, 25, stdin);
 	//sends username to server to verify
-	send(client_socket, username, sizeof(username), 0);	
+	send(client_socket, username, strlen(username), 0);	
 	//receives reply
-	recv(client_socket, buffer, sizeof(buffer), 0);
+	recv(client_socket, buffer, strlen(buffer), 0);
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {

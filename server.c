@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 
 #define PORT 7272
@@ -22,29 +23,29 @@ int sign_in(int client_socket) {
 	char message[256];
 	
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
-	
+	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
 	recv(client_socket, account.username, strlen(account.username), 0);
 
-	if (strlen(account.username) > 20) { 
-			strcpy(message, "NOTOK");
+		if (strlen(account.username) > 20) { 
+				strcpy(message, "NOTOK");
+				send(client_socket, message, sizeof(message), 0);
+				printf("user entered incorrect username");
+				return -1;
+		}else {
+			strcpy(message, "OK");
 			send(client_socket, message, sizeof(message), 0);
-	}else {
-		strcpy(message, "OK");
-		send(client_socket, message, sizeof(message), 0);
-	}
+		}
 
-	recv(client_socket, account.password, strlen(account.password), 0);
-	if (sizeof(account.password) > 20) {
-		strcpy(message, "NOTOK");
-		send(client_socket, message, sizeof(message),0);
-	}else {
-		strcpy(message, "OK");
-		send(client_socket, message, sizeof(message), 0);
-	}
-
-
-
-
+		recv(client_socket, account.password, strlen(account.password), 0);
+		if (sizeof(account.password) > 20) {
+			strcpy(message, "NOTOK");
+			send(client_socket, message, sizeof(message),0);
+			return -1;
+		}else {
+			strcpy(message, "OK");
+			send(client_socket, message, sizeof(message), 0);
+		}
+		return 0;
 }
 
 int create_acc(int client_socket) {
@@ -72,6 +73,8 @@ void main() {
 		 printf("[+] socket successfully opened\n");
 	 }
 
+	 setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+
 	 server_addr.sin_family=AF_INET;
 	 server_addr.sin_port=htons(PORT);
 	 server_addr.sin_addr.s_addr= INADDR_ANY;
@@ -85,7 +88,6 @@ void main() {
 
 	 if (listen(sockfd, PENDMAX) < 0) {
 		 perror("[-] error listening ");
-		 close(sockfd);
 	 }
 	 else {
  		 printf("[+] listening to on port %i...\n", PORT);
@@ -103,7 +105,7 @@ void main() {
 	        FD_SET(sockfd, &readfds);
 
 	        activity = select(FD_SETSIZE, &readfds, NULL, NULL, &select_timeout);
-	        if (activity < 0)
+	        if (activity < 0 && errno != EINTR)
 		        continue;
 
 	        if (FD_ISSET(sockfd, &readfds)) {
@@ -111,10 +113,12 @@ void main() {
 		        if ((new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size)) < 0) {
 			        perror("[-] failed to accept connection ");
 		        }
-		        printf("[+] user %s has connected \n", inet_ntoa(new_addr.sin_addr));
+		        printf("[+] user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
 		        recv(new_socket, message, 9, 0);
 		        if (strncmp(message, "sign_in", 7) == 0) {
+			       while(sign_in(new_socket) == -1) {
 			       sign_in(new_socket);
+			       }
 		        }
 		        else if (strncmp(message, "create_acc", 12) == 0) {
 			       create_acc(new_socket);
