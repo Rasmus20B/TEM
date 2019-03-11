@@ -30,6 +30,7 @@ struct account {
 };
 
 void message_interface(char username, int client_socket)  {
+	
 	char *buffer;
 	int i;
 
@@ -59,12 +60,11 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	struct account *new_acc;
 	
 	//allocate memory for buffer and account structure 'new_acc'
-	new_acc = (struct account*)malloc(sizeof(struct account));	
+	new_acc = (struct account*)malloc(sizeof(struct account));		
 	buffer = (char*)malloc(sizeof(char)*256);
 
-	puts("please enter your username : ");
-	fgets(new_acc->username, (sizeof(new_acc->username)+ 3), stdin);
-	sleep(2);
+	puts("please enter your username\n"); 
+	fgets(new_acc->username, (sizeof(new_acc->username)+ 2), stdin);
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
@@ -79,7 +79,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	}
 	
 	puts("please enter your password\n");
-	fgets(new_acc->password, 25, stdin);
+	fgets(new_acc->password, 22, stdin);
 	//sends password to server to verify
 	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
 	//recieves reply
@@ -107,8 +107,8 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 
 	new_acc = (struct account*)malloc(sizeof(struct account));	
 
-	puts("please enter your username : ");
-	fgets(new_acc->username, (sizeof(new_acc->username)+ 3), stdin);
+	printf("\nplease enter your username : ");
+	fgets(new_acc->username, sizeof(new_acc->username), stdin);
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
@@ -122,7 +122,7 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	}
 	
 	puts("please enter your password\n");
-	fgets(new_acc->password, 25, stdin);
+	fgets(new_acc->password, sizeof(new_acc->password), stdin);
 	//sends password to server to verify
 	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
 	//recieves reply
@@ -134,7 +134,6 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 		free(new_acc->password);
 		return -1;
 	}else {
-
 		free(new_acc->password);
 		return 0;
 	}
@@ -143,11 +142,13 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
 	
 	int client_socket;
-	char buffer[256];	
+	char *buffer;	
 	int choice = 0;	
 
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;		
+
+	buffer = (char *)malloc(256);
 	
 	//creates the TCP client socket
 	client_socket = socket(PF_INET, SOCK_STREAM, 0);	
@@ -171,9 +172,6 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	//recieve welcome message from server along with options
 	//print menu
 	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");	
-	
-	//reinitialise buffer
-	memset(buffer, '\0', sizeof(buffer));
 		
 	//call sign_in function when 1 is selected, call create_account when 2 is selected, else loop
 	while (choice == 0) {
@@ -187,15 +185,15 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 			strcpy(buffer, "create_acc");
 			send(client_socket, buffer, strlen(buffer), 0);
 			create_acc(client_socket);
-		}else if (choice == 3) {
-			
-
 		}else {
 			puts("please enter a valid choice");
 			choice = 0;
 		}
 	}
+
+	free(buffer);
 	return 0;
+
 }
 
 int main(int argc, char** argv) {
@@ -204,7 +202,7 @@ int main(int argc, char** argv) {
 	char *dest_ip_addr; 	
 	// holds the return value of 'connect to server' function
 	int cor_ip = -1;	
-	
+	//clear terminal screen	
 	system("clear");
 	
 	//allocate memory to dest_ip_addr

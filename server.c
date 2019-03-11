@@ -50,8 +50,40 @@ void message_interface(int client_socket) {
 
 int sign_in(int client_socket) {
 	
-	char message[256];
+	char *message;
+
+	message = (char *)malloc(256);
 	
+	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
+	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
+		recv(client_socket, message, strlen(account.username), 0);
+
+		if (strlen(message) > 21) { 
+				strcpy(message, "NOTOK");
+				send(client_socket, message, sizeof(message), 0);
+				printf("user entered incorrect username");
+				return -1;
+		}else {
+			strcpy(account.username, message);
+			send(client_socket, message, strlen(message), 0);
+		}
+
+		recv(client_socket, account.password, strlen(account.password), 0);
+
+		if (strlen(message) > 21) {
+			strcpy(message, "NOTOK");
+			send(client_socket, message, sizeof(message),0);
+			return -1;
+		}else {
+			strcpy(account.password, message);
+		}
+		return 0;
+}
+
+int create_acc(int client_socket) {
+	char *message;
+	
+	message = (char *)malloc(256);
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
 	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
 		recv(client_socket, message, strlen(account.username), 0);
@@ -76,13 +108,10 @@ int sign_in(int client_socket) {
 			strcpy(account.password, message);
 		}
 		return 0;
-}
-
-int create_acc(int client_socket) {
 
 }
 
-void main() { 
+int main() { 
 
 	 int sockfd, new_socket, activity;
 	 struct sockaddr_in server_addr, new_addr; 
@@ -138,14 +167,14 @@ void main() {
 	        if (activity < 0 && errno != EINTR)
 		        continue;
 
-	        if (FD_ISSET(sockfd, &readfds)) 
+	        if (FD_ISSET(sockfd, &readfds)) {
 	       	        addr_size = sizeof(new_addr);
 
 		        if ((new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size)) < 0) {
-				if (errno != MSG_DONTWAIT)	
+				if (errno != MSG_DONTWAIT) {	
 					continue;
-			
-			        perror("[-] failed to accept connection ");
+				}
+			perror("[-] failed to accept connection ");
 			}
 
 		        printf("[+] user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
@@ -157,9 +186,13 @@ void main() {
 			       }
 		        }
 		        else if (strncmp(message, "create_acc", 12) == 0) {
+			       while(create_acc(new_socket) == -1) {
 			       create_acc(new_socket); 
+			       }
+			}
 		}	
-	}	
+	}
+ return 0;	 
 }
 
 
