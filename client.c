@@ -13,6 +13,8 @@
 /* This program is the client that users interact with */
 /* connects to server */
 
+//ACCOUNT STRUCTURE TO FIX SPAGHET
+
 //add quit in messaging function
 //
 //if message == \quit then
@@ -22,42 +24,120 @@
 //buffer = username + message + timestamp
 //send buffer
 //
-int create_acc() {
-	return 0;
-}
-
-int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
-	
+struct account {
 	char username[20];
 	char password[20];
-	char buffer[256];
+};
 
+void message_interface(char username, int client_socket)  {
+	char *buffer;
+	int i;
 
-	puts("please enter your username");
-	fgets(username, 25, stdin);
+	buffer = (char *)malloc(256);
+
+	while(1) {
+		memset(buffer, '\0', strlen(buffer));
+		puts("message : ");
+		while ((buffer[i++] = getchar()) != '\n') 
+		;
+
+		send(client_socket, buffer, strlen(buffer), 0);
+		memset(buffer, '\0', strlen(buffer));
+		recv(client_socket, buffer, strlen(buffer), 0);
+		printf("%s\n", buffer);
+		if ((strcmp(buffer, "exit")) == 0) {
+			puts("Exiting...\n");
+			break;
+		
+		}
+		
+	}
+}
+
+int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
+	char *buffer;
+	struct account *new_acc;
+	
+	//allocate memory for buffer and account structure 'new_acc'
+	new_acc = (struct account*)malloc(sizeof(struct account));	
+	buffer = (char*)malloc(sizeof(char)*256);
+
+	puts("please enter your username : ");
+	fgets(new_acc->username, (sizeof(new_acc->username)+ 3), stdin);
+	sleep(2);
 	//sends username to server to verify
-	send(client_socket, username, strlen(username), 0);	
+	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
 	recv(client_socket, buffer, strlen(buffer), 0);
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {
+		puts("invalid username\n");
+		//free memory and return function failure
+		free(new_acc->username);
 		return -1;
 	}
 	
-	puts("please enter your password");
-	fgets(password, 25, stdin);
+	puts("please enter your password\n");
+	fgets(new_acc->password, 25, stdin);
 	//sends password to server to verify
-	send(client_socket, password, strlen(password), 0);
+	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
 	//recieves reply
 	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {
+		printf("incorrect password");
+		free(new_acc->password);
+		return -1;
+	//if reply == OK then
+	}else {
+		//free memory and call messaging interface
+		free(new_acc->password);
+		free(buffer);
+		message_interface(*new_acc->username, client_socket);
+		return 0;
+	}
+}
+
+int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
+		
+	char buffer[256];
+	struct account *new_acc;
+
+	new_acc = (struct account*)malloc(sizeof(struct account));	
+
+	puts("please enter your username : ");
+	fgets(new_acc->username, (sizeof(new_acc->username)+ 3), stdin);
+	//sends username to server to verify
+	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
+	//receives reply
+	recv(client_socket, buffer, strlen(buffer), 0);
+
+	//if reply == NOTOK then 
+	if (strncmp(buffer, "NOTOK", 5)) {
+		puts("invalid username\n");
+		free(new_acc->username);
+		return -1;
+	}
+	
+	puts("please enter your password\n");
+	fgets(new_acc->password, 25, stdin);
+	//sends password to server to verify
+	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
+	//recieves reply
+	recv(client_socket, buffer, sizeof(buffer), 0);
+
+	//if reply == NOTOK then 
+	if (strncmp(buffer, "NOTOK", 5)) {
+		printf("incorrect password");
+		free(new_acc->password);
 		return -1;
 	}else {
+
+		free(new_acc->password);
 		return 0;
-		}
+	}
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
@@ -90,7 +170,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	printf("[+] successfully connected\n");
 	//recieve welcome message from server along with options
 	//print menu
-	printf("sign in : 1\fcreate account : 2\f");	
+	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");	
 	
 	//reinitialise buffer
 	memset(buffer, '\0', sizeof(buffer));
@@ -107,6 +187,9 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 			strcpy(buffer, "create_acc");
 			send(client_socket, buffer, strlen(buffer), 0);
 			create_acc(client_socket);
+		}else if (choice == 3) {
+			
+
 		}else {
 			puts("please enter a valid choice");
 			choice = 0;
@@ -115,20 +198,24 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	return 0;
 }
 
-void main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
 	//IP address of destination server
-	char dest_ip_addr[15]; 	
+	char *dest_ip_addr; 	
 	// holds the return value of 'connect to server' function
 	int cor_ip = -1;	
 	
 	system("clear");
 	
+	//allocate memory to dest_ip_addr
+	dest_ip_addr = (char *)malloc(15);
+
 	//copy command line argument to 'dest_ip_addr' variable			
 	if (argv[1] != NULL) {
-		strcpy(dest_ip_addr, argv[1]);
+		strcpy(dest_ip_addr, argv[1]); //SECURITY FLAW
 	}
-
+	
+	//while connect function fails
 	while (cor_ip == -1) {	
 		// if user has not entered valid IP address from command line
 		if (dest_ip_addr == NULL || strlen(dest_ip_addr) < 7 || strlen(dest_ip_addr) > 15) { 		
@@ -145,9 +232,12 @@ void main(int argc, char** argv) {
 			if (cor_ip == -1) {
 				puts("please enter a valid ip address");
 			}
-			//reintialise memory in dest_ip_address
-			memset(dest_ip_addr, '\0', sizeof(dest_ip_addr));		
+			//reintialise memory in dest_ip_address that has been written to
+			memset(dest_ip_addr, '\0', strlen(dest_ip_addr));		
 		}		
-	}	
+	}
+	//frees the memory allocated to dest_ip_address
+	free(dest_ip_addr);	
+	return 0;
 }
 	
