@@ -64,11 +64,17 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	buffer = (char*)malloc(sizeof(char)*256);
 
 	puts("please enter your username\n"); 
-	fgets(new_acc->username, (sizeof(new_acc->username)+ 2), stdin);
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
 	recv(client_socket, buffer, strlen(buffer), 0);
+	for (int i = 0; i <= 20; i++) {
+		if (buffer[i] == '\n') {
+			buffer[i] = '\0';
+		}
+	}
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {
@@ -77,27 +83,30 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		free(new_acc->username);
 		return -1;
 	}
+	else if (strncmp(buffer, "OK", 2)) {
 	
-	puts("please enter your password\n");
-	fgets(new_acc->password, 22, stdin);
-	//sends password to server to verify
-	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
-	//recieves reply
-	recv(client_socket, buffer, sizeof(buffer), 0);
+		puts("please enter your password\n");
+		fgets(new_acc->password, 22, stdin);
+		//sends password to server to verify
+		send(client_socket, new_acc->password, strlen(new_acc->password), 0);
+		//recieves reply
+		recv(client_socket, buffer, sizeof(buffer), 0);
 
-	//if reply == NOTOK then 
-	if (strncmp(buffer, "NOTOK", 5)) {
-		printf("incorrect password");
-		free(new_acc->password);
-		return -1;
-	//if reply == OK then
-	}else {
-		//free memory and call messaging interface
-		free(new_acc->password);
-		free(buffer);
-		message_interface(*new_acc->username, client_socket);
-		return 0;
+		//if reply == NOTOK then 
+		if (strncmp(buffer, "NOTOK", 5)) {
+			printf("incorrect password");
+			free(new_acc->password);
+			return -1;
+		//if reply == OK then
+		}else {
+			//free memory and call messaging interface
+			free(new_acc->password);
+			free(buffer);
+			message_interface(*new_acc->username, client_socket);
+		
+		}
 	}
+	return 0;
 }
 
 int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER

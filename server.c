@@ -17,9 +17,9 @@
 //THINK ABOUT USING STRTOK TO SEPERATE MESSAGE INTO RECIPIENTS AND CONTENTS
 
 struct account {
-	char username[20];
-	char password[20];
-}account;
+	char *username;
+	char *password;
+};
 
 void message_interface(int client_socket) {
 	
@@ -51,42 +51,48 @@ void message_interface(int client_socket) {
 int sign_in(int client_socket) {
 	
 	char *message;
+	struct account *temp_acc;
 
 	message = (char *)malloc(256);
+	temp_acc = (struct account*)malloc(sizeof(struct account));
 	
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
 	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
-		recv(client_socket, message, strlen(account.username), 0);
+	recv(client_socket, message, strlen(temp_acc->username), 0);
 
-		if (strlen(message) > 21) { 
-				strcpy(message, "NOTOK");
-				send(client_socket, message, sizeof(message), 0);
-				printf("user entered incorrect username");
-				return -1;
-		}else {
-			strcpy(account.username, message);
-			send(client_socket, message, strlen(message), 0);
-		}
-
-		recv(client_socket, account.password, strlen(account.password), 0);
-
-		if (strlen(message) > 21) {
+	if (strlen(message) > 21) { 
 			strcpy(message, "NOTOK");
-			send(client_socket, message, sizeof(message),0);
+			send(client_socket, message, sizeof(message), 0);
+			printf("user entered incorrect username");
 			return -1;
-		}else {
-			strcpy(account.password, message);
-		}
-		return 0;
+	}else {
+		strcpy(temp_acc->username, message);
+		send(client_socket, message, strlen(message), 0);
+	}
+	temp_acc->password = (char *)malloc(22);
+	recv(client_socket, temp_acc->password, strlen(temp_acc->password), 0);
+
+	if (strlen(message) > 21) {
+		strcpy(message, "NOTOK");
+		send(client_socket, message, sizeof(message),0);
+		return -1;
+	}else {
+		strcpy(temp_acc->password, message);
+	}
+	message_interface(client_socket);
+
+	return 0;
 }
 
 int create_acc(int client_socket) {
 	char *message;
+	struct account *new_acc;
 	
 	message = (char *)malloc(256);
+	new_acc = (struct account*)malloc(sizeof(struct account));
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
 	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
-		recv(client_socket, message, strlen(account.username), 0);
+		recv(client_socket, message, sizeof(new_acc->username), 0);
 
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
@@ -94,18 +100,19 @@ int create_acc(int client_socket) {
 				printf("user entered incorrect username");
 				return -1;
 		}else {
-			strcpy(account.username ,message);
+			strcpy(new_acc->username, message);
+			strcpy(message, "OK");
 			send(client_socket, message, sizeof(message), 0);
 		}
 
-		recv(client_socket, account.password, strlen(account.password), 0);
+		recv(client_socket, new_acc->password, strlen(new_acc->password), 0);
 
 		if (strlen(message) > 20) {
 			strcpy(message, "NOTOK");
 			send(client_socket, message, sizeof(message),0);
 			return -1;
 		}else {
-			strcpy(account.password, message);
+			strcpy(new_acc->password, message);
 		}
 		return 0;
 
