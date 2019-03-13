@@ -111,10 +111,11 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 
 int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
 		
-	char buffer[256];
+	char *buffer
 	struct account *new_acc;
 
 	new_acc = (struct account*)malloc(sizeof(struct account));	
+	buffer = (char *)malloc(256);
 
 	printf("\nplease enter your username : ");
 	fgets(new_acc->username, sizeof(new_acc->username), stdin);
@@ -127,6 +128,7 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	if (strncmp(buffer, "NOTOK", 5)) {
 		puts("invalid username\n");
 		free(new_acc->username);
+		free(buffer);
 		return -1;
 	}
 	
@@ -141,9 +143,11 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	if (strncmp(buffer, "NOTOK", 5)) {
 		printf("incorrect password");
 		free(new_acc->password);
+		free(buffer);
 		return -1;
 	}else {
 		free(new_acc->password);
+		free(buffer);
 		return 0;
 	}
 }
