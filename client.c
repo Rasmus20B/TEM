@@ -70,7 +70,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
 	recv(client_socket, buffer, strlen(buffer), 0);
-	for (int i = 0; i <= 20; i++) {
+	for (int i = 0; i <= 20; ++i) {
 		if (buffer[i] == '\n') {
 			buffer[i] = '\0';
 		}

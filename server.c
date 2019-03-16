@@ -17,8 +17,8 @@
 //THINK ABOUT USING STRTOK TO SEPERATE MESSAGE INTO RECIPIENTS AND CONTENTS
 
 struct account {
-	char *username;
-	char *password;
+	char username[22];
+	char password[22];
 };
 
 void message_interface(int client_socket) {
@@ -54,11 +54,12 @@ int sign_in(int client_socket) {
 	struct account *temp_acc;
 
 	message = (char *)malloc(256);
-	temp_acc = (struct account*)malloc(sizeof(struct account));
+	temp_acc = (struct account*)malloc(50);
 	
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
 	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
-	recv(client_socket, message, strlen(temp_acc->username), 0);
+	recv(client_socket, message, sizeof(temp_acc->username), 0);
+	recv(client_socket, message, sizeof(temp_acc->username), 0);
 
 	if (strlen(message) > 21) { 
 			strcpy(message, "NOTOK");
@@ -68,8 +69,7 @@ int sign_in(int client_socket) {
 	}else {
 		strcpy(temp_acc->username, message);
 		send(client_socket, message, strlen(message), 0);
-	}
-	temp_acc->password = (char *)malloc(22);
+	}	
 	recv(client_socket, temp_acc->password, strlen(temp_acc->password), 0);
 
 	if (strlen(message) > 21) {
@@ -89,10 +89,11 @@ int create_acc(int client_socket) {
 	struct account *new_acc;
 	
 	message = (char *)malloc(256);
-	new_acc = (struct account*)malloc(sizeof(struct account));
+	new_acc = (struct account *)malloc(50);
 	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
 	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
 		recv(client_socket, message, sizeof(new_acc->username), 0);
+		
 
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
@@ -114,6 +115,8 @@ int create_acc(int client_socket) {
 		}else {
 			strcpy(new_acc->password, message);
 		}
+		free(message);
+		free(new_acc);
 		return 0;
 
 }
@@ -156,7 +159,7 @@ int main() {
 		 perror("[-] error listening ");
 	 }
 	 else {
- 		 printf("[+] listening to on port %i...\n", PORT);
+ 		 printf("[+] listening on port %i...\n", PORT);
 	 }
 			
 	//monitoring multiple clients
