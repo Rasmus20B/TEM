@@ -103,7 +103,7 @@ int create_acc(int client_socket) {
 		}else {
 			strcpy(new_acc->username, message);
 			strcpy(message, "OK");
-			send(client_socket, message, sizeof(message), 0);
+			send(client_socket, message, sizeof(message), 0);	
 		}
 
 		recv(client_socket, new_acc->password, strlen(new_acc->password), 0);
@@ -127,8 +127,7 @@ int main() {
 	 struct sockaddr_in server_addr, new_addr; 
 	 	
 	 socklen_t addr_size; 
-	 char message[256] = "Hello there";
-	
+	 
 	 system("clear");
 
 	 sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -189,7 +188,7 @@ int main() {
 
 		        printf("[+] user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
 
-		        recv(new_socket, message, 9, 0);
+		        recv(new_socket, message, 10, 0);
 		        if (strncmp(message, "sign_in", 7) == 0) {
 			       while(sign_in(new_socket) == -1) {
 			       sign_in(new_socket);
