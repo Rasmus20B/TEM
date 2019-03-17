@@ -7,6 +7,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #define PORT 7272
 
 
@@ -111,7 +117,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 
 int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
 		
-	char *buffer
+	char *buffer;
 	struct account *new_acc;
 
 	new_acc = (struct account*)malloc(sizeof(struct account));	
@@ -158,6 +164,18 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	char *buffer;	
 	int choice = 0;	
 
+////////SSL_CTX *ctx;
+////////SSL *ssl;
+////////X509 *server_cert;
+////////SSL_METHOD *meth;
+////////int err;
+////////char *str;
+
+////////OpenSSL_add_ssl_algorithms();
+////////meth = TLS_client_method();
+////////SSL_load_error_strings();
+////////ctx = SSL_CTX_new (meth);
+
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;		
 
@@ -182,7 +200,27 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	}
 
 	printf("[+] successfully connected\n");
-	//recieve welcome message from server along with options
+	
+/////////ssl = SSL_new(ctx);
+/////////SSL_set_fd(ssl, client_socket);
+/////////err = SSL_connect(ssl);
+
+/////////printf("SSL connection using %s\n", SSL_get_cipher(ssl));
+
+/////////server_cert = SSL_get_peer_certificate(ssl);
+////////
+/////////str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
+/////////CHK_NULL(str);
+/////////Printf("\t subject: %s\n", str);
+/////////OPENSSL_free(str);
+
+/////////str = X509_NAME_oneline(X509_get_issuer_name(server_cert), 0, 0);
+/////////CHK_NULL(str);
+/////////printf("\t issuer: %s\n", str);
+/////////OPENSSL_free(str);
+
+/////////X509_free(server_cert);
+
 	//print menu
 	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");	
 		
