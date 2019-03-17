@@ -125,8 +125,11 @@ int main() {
 
 	 int sockfd, new_socket, activity;
 	 struct sockaddr_in server_addr, new_addr; 
+	 char *message;
 	 	
 	 socklen_t addr_size; 
+
+	 message = (char *)malloc(30);
 	 
 	 system("clear");
 
@@ -194,7 +197,7 @@ int main() {
 			       sign_in(new_socket);
 			       }
 		        }
-		        else if (strncmp(message, "create_acc", 12) == 0) {
+		        else if (strncmp(message, "create_acc", 10) == 0) {
 			       while(create_acc(new_socket) == -1) {
 			       create_acc(new_socket); 
 			       }
