@@ -67,7 +67,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	
 	//allocate memory for buffer and account structure 'new_acc'
 	new_acc = (struct account*)malloc(sizeof(struct account));		
-	buffer = (char*)malloc(sizeof(char)*256);
+	buffer = (char*)calloc(sizeof(char), sizeof(char)*256);
 
 	puts("please enter your username\n"); 
 	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
@@ -75,17 +75,18 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
-	recv(client_socket, buffer, strlen(buffer), 0);
+	recv(client_socket, buffer, sizeof(buffer), 0);
 	//if reply == NOTOK then 
-	if (strncmp(buffer, "NOTOK", 5)) {
+	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		puts("invalid username\n");
 		//free memory and return function failure
 		free(new_acc->username);
 		return -1;
 	}
-	else if (strncmp(buffer, "OK", 2)) {
+	else if (strncmp(buffer, "OK", 2) == 0) {
 	
 		puts("please enter your password\n");
+		fgets(new_acc->password, 22, stdin);
 		fgets(new_acc->password, 22, stdin);
 		//sends password to server to verify
 		send(client_socket, new_acc->password, strlen(new_acc->password), 0);
@@ -93,7 +94,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		recv(client_socket, buffer, sizeof(buffer), 0);
 
 		//if reply == NOTOK then 
-		if (strncmp(buffer, "NOTOK", 5)) {
+		if (strncmp(buffer, "NOTOK", 5) == 0) {
 			printf("incorrect password");
 			free(new_acc->password);
 			return -1;

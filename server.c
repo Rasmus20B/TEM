@@ -103,7 +103,7 @@ int create_acc(int client_socket) {
 		}else {
 			strcpy(new_acc->username, message);
 			strcpy(message, "OK");
-			send(client_socket, message, sizeof(message), 0);	
+			send(client_socket, message, 2, 0);	
 		}
 
 		recv(client_socket, new_acc->password, strlen(new_acc->password), 0);
