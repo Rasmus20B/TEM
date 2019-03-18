@@ -31,36 +31,36 @@ int clients[30];
 int n = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void message_interface(int client_socket) {
+void message_interface(int client_socket, struct sockaddr_in new_addr) {
 	
-////////char buffer[256];
+	char buffer[256];
 
-////////while(1) {
-////////	memset(buffer, '\0', strlen(buffer));
+	while(1) {
+		memset(buffer, '\0', strlen(buffer));
 
-////////	recv(client_socket, buffer, sizeof(buffer), 0);
-////////	if(strncmp(buffer, "exit", 4) == 0) {
-////////		printf("user: %s has disconnected", inet_ntoa(new_addr.sin_addr));	
-////////		break;
-////////	}else{
-////////		printf("%s\n", buffer);
-////////		send(client_socket, buffer, strlen(buffer), 0);
-////////		memset(buffer, '\0', sizeof(buffer));
-////////	}
-////////}
+		recv(client_socket, buffer, sizeof(buffer), 0);
+		if(strncmp(buffer, "exit", 4) == 0) {
+			printf("user: %s has disconnected", inet_ntoa(new_addr.sin_addr));	
+			break;
+		}else{
+			printf("%s\n", buffer);
+			send(client_socket, buffer, strlen(buffer), 0);
+			memset(buffer, '\0', sizeof(buffer));
+		}
+	}
 
-////////close(client_socket);
-////////	
-////////	/* extract recipient tokens with strtok
-////////	   
-////////	   if 'token for recipients' length is 0
-////////	   	for each connected device 
-////////		send message
-////////	   else if token > 3
-////////	        compare tokens with usernames
-////////		if match
-////////		send out socket connected with selected username
-///////
+	close(client_socket);
+		
+		/* extract recipient tokens with strtok
+		   
+		   if 'token for recipients' length is 0
+		   	for each connected device 
+			send message
+		   else if token > 3
+		        compare tokens with usernames
+			if match
+			send out socket connected with selected username
+		*/	
 }
 
 int sign_in(int client_socket, struct sockaddr_in new_addr) {
@@ -94,12 +94,12 @@ int sign_in(int client_socket, struct sockaddr_in new_addr) {
 	}else {
 		strcpy(temp_acc->password, message);
 	}
-	message_interface(client_socket);
+	message_interface(client_socket, new_addr);
 
 	return 0;
 }
 
-int create_acc(int client_socket) {
+int create_acc(int client_socket, struct sockaddr_in new_addr) {
 	char *message;
 	struct account *new_acc;
 	
@@ -141,21 +141,14 @@ int create_acc(int client_socket) {
 		}
 	}	
 	free(message);
-	message_interface(client_socket);
+	message_interface(client_socket, new_addr);
 	free(new_acc);	
 
-	return 0;	
+	
 }
 
 void *handle(void *sock) {
-
-	struct account user = *((struct account *)sock);
-	
-	create_acc(user.sockno);
-
 	pthread_mutex_unlock(&mutex);
-
-	return 0;
 
 }
 int main() { 

@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <sys/socket.h>
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include <time.h>
 
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
@@ -35,26 +38,43 @@ struct account {
 	char password[20];
 };
 
-void message_interface(char username, int client_socket)  {
+void message_interface(char *username, int client_socket)  {
 	
 	char *buffer;
-	int i;
+	time_t ltime;
+	struct tm *info;
+	char *contents;
+	char time_buffer[20];
 
 	buffer = (char *)malloc(256);
+	contents = (char *)malloc(200);
 
 	while(1) {
 		memset(buffer, '\0', strlen(buffer));
 		puts("message : ");
-		while ((buffer[i++] = getchar()) != '\n') 
-		;
+		
+		fgets(contents, 202, stdin);
+		
+		time(&ltime);
 
+		info = localtime(&ltime);
+
+		strftime(time_buffer, 20, "%x - %T:%M", info);
+
+		strcat(buffer, username);
+		strcat(buffer, " : \t");
+		strcat(buffer, contents);
+		strcat(buffer, "\t\t\t");
+		strcat(buffer, time_buffer);
+		
 		send(client_socket, buffer, strlen(buffer), 0);
 		memset(buffer, '\0', strlen(buffer));
 		recv(client_socket, buffer, strlen(buffer), 0);
 		printf("%s\n", buffer);
-		if ((strcmp(buffer, "exit")) == 0) {
+		if ((strncmp(buffer, "exit", 4)) == 0) {
 			puts("Exiting...\n");
-			break;
+			free(buffer);
+			system("exit");
 		
 		}
 		
@@ -86,8 +106,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	else if (strncmp(buffer, "OK", 2) == 0) {
 	
 		puts("please enter your password\n");
-		fgets(new_acc->password, 22, stdin);
-		fgets(new_acc->password, 22, stdin);
+		fgets(new_acc->password, 22, stdin);	
 		//sends password to server to verify
 		send(client_socket, new_acc->password, strlen(new_acc->password), 0);
 		//recieves reply
@@ -101,9 +120,8 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		//if reply == OK then
 		}else {
 			//free memory and call messaging interface
-			free(new_acc->password);
 			free(buffer);
-			message_interface(*new_acc->username, client_socket);
+			message_interface(new_acc->username, client_socket);
 		
 		}
 	}
