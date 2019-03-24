@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
+
 #include <sys/socket.h>
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
@@ -33,37 +35,34 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void message_interface(int client_socket) {
 	
-////////char buffer[256];
+	char buffer[256];
 
-////////while(1) {
-////////	memset(buffer, '\0', strlen(buffer));
+	while(1) {
+		memset(buffer, '\0', strlen(buffer));
 
-////////	recv(client_socket, buffer, sizeof(buffer), 0);
-////////	if(strncmp(buffer, "exit", 4) == 0) {
-////////		printf("user: %s has disconnected", inet_ntoa(new_addr.sin_addr));	
-////////		break;
-////////	}else{
-////////		printf("%s\n", buffer);
-////////		send(client_socket, buffer, strlen(buffer), 0);
-////////		memset(buffer, '\0', sizeof(buffer));
-////////	}
-////////}
+		while(recv(client_socket, buffer, sizeof(buffer), 0) > 0) {
+		printf("%s\n", buffer);
+		pthread_mutex_lock(&mutex);
+		for(int i = 0; i <= MAXCON; i++) {
+			send(user[i].sockno, buffer, strlen(buffer), 0);	
+			memset(buffer, '\0', sizeof(buffer));
+			}
+		}
+	}
+	
+	/* extract recipient tokens with strtok
+	   
+	   if 'token for recipients' length is 0
+	   	for each connected device 
+		send message
+	   else if token > 3
+	        compare tokens with usernames
+		if match
+		send out socket connected with selected username */
 
-////////close(client_socket);
-////////	
-////////	/* extract recipient tokens with strtok
-////////	   
-////////	   if 'token for recipients' length is 0
-////////	   	for each connected device 
-////////		send message
-////////	   else if token > 3
-////////	        compare tokens with usernames
-////////		if match
-////////		send out socket connected with selected username
-///////
 }
 
-int sign_in(int client_socket, struct sockaddr_in new_addr) {
+int sign_in(int client_socket) {
 	
 	char *message;
 	struct account *temp_acc;
@@ -71,8 +70,6 @@ int sign_in(int client_socket, struct sockaddr_in new_addr) {
 	message = (char *)malloc(256);
 	temp_acc = (struct account*)malloc(50);
 	
-	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
-	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
 	recv(client_socket, message, sizeof(temp_acc->username), 0);
 	recv(client_socket, message, sizeof(temp_acc->username), 0);
 
@@ -105,9 +102,8 @@ int create_acc(int client_socket) {
 	
 	message = (char *)malloc(256);
 	new_acc = (struct account *)malloc(50);
-	//rough draft. server would not need to check the size of the username when checking details, only the compare them with records.	
-	//ADD WAY OUT OF FUNCTION WHEN CLIENT GETS WRONG
-		recv(client_socket, message, sizeof(new_acc->username), 0);
+	
+	recv(client_socket, message, sizeof(new_acc->username), 0);
 		
 
 		if (strlen(message) > 20) { 
@@ -148,10 +144,23 @@ int create_acc(int client_socket) {
 }
 
 void *handle(void *sock) {
-
-	struct account user = *((struct account *)sock);
 	
-	create_acc(user.sockno);
+	char *message;
+	struct account user = *((struct account *)sock);
+
+	message = (char *)malloc(15);
+	
+	recv(user.sockno, message, 10, 0);
+
+	if (strncmp(message, "sign_in", 7) == 0) {
+		while(sign_in(user.sockno) == -1) {
+			sign_in(user.sockno);
+		}
+	}else if (strncmp(message, "create_acc", 10) == 0) {
+		while(create_acc(user.sockno) == -1) {
+			create_acc(user.sockno);
+		}
+	}
 
 	pthread_mutex_unlock(&mutex);
 

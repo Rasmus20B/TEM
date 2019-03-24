@@ -22,68 +22,73 @@
 /* This program is the client that users interact with */
 /* connects to server */
 
-//ACCOUNT STRUCTURE TO FIX SPAGHET
-
-//add quit in messaging function
-//
-//if message == \quit then
-//quit_tem();
-//
-//else
-//buffer = username + message + timestamp
-//send buffer
-//
 struct account {
 	char username[20];
 	char password[20];
+	int cli_fd;
 };
 
-void message_interface(char *username, int client_socket)  {
-	
+
+void *receiving(void *acc) {
+
 	char *buffer;
+	struct account *user;
+	user = (struct account *) acc;
+
+	buffer = (char *)malloc(256);
+	while(recv(user->cli_fd, buffer, 256, 0))
+		printf("%s\n", buffer);
+	
+}
+
+void *sending(void *acc) {
+
+	char *buffer;
+	char *contents;
 	time_t ltime;
 	struct tm *info;
-	char *contents;
 	char time_buffer[20];
+	char *pos;
+
+	struct account *user;
+	user = (struct account *) acc;
 
 	buffer = (char *)malloc(256);
 	contents = (char *)malloc(200);
 
 	while(1) {
 		memset(buffer, '\0', strlen(buffer));
-		puts("message : ");
+		printf("message : ");
 		
 		fgets(contents, 202, stdin);
-		
+
+		pos = strchr(contents, '\n');
+		*pos = '\0';
+	
 		time(&ltime);
 
 		info = localtime(&ltime);
 
 		strftime(time_buffer, 20, "%x - %T:%M", info);
 
-		strcat(buffer, username);
+		strcat(buffer, user->username);
 		strcat(buffer, " : \t");
 		strcat(buffer, contents);
 		strcat(buffer, "\t\t\t");
 		strcat(buffer, time_buffer);
+		strcat(buffer, "\n");
 		
-		send(client_socket, buffer, strlen(buffer), 0);
+		send(user->cli_fd, buffer, strlen(buffer), 0);
 		memset(buffer, '\0', strlen(buffer));
-		recv(client_socket, buffer, strlen(buffer), 0);
-		printf("%s\n", buffer);
-		if ((strncmp(buffer, "exit", 4)) == 0) {
-			puts("Exiting...\n");
-			free(buffer);
-			system("exit");
-		
-		}
-		
 	}
 }
-
+	
 int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
+	
 	char *buffer;
 	struct account *new_acc;
+	char *pos;
+	
 	
 	//allocate memory for buffer and account structure 'new_acc'
 	new_acc = (struct account*)malloc(sizeof(struct account));		
@@ -92,6 +97,10 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	puts("please enter your username\n"); 
 	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
 	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
+	//converts trailing newline left in by fgets to nullbyte
+	pos = strchr(new_acc->username, '\n');
+	*pos = '\0';
+
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
@@ -100,7 +109,6 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		puts("invalid username\n");
 		//free memory and return function failure
-		free(new_acc->username);
 		return -1;
 	}
 	else if (strncmp(buffer, "OK", 2) == 0) {
@@ -121,10 +129,17 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		}else {
 			//free memory and call messaging interface
 			free(buffer);
-			message_interface(new_acc->username, client_socket);
-		
+			pthread_t sending_t, receiving_t;
+
+			pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
+			pthread_create(&receiving_t, NULL, receiving, (void *)&new_acc);
+
+			pthread_join(sending_t, NULL);
+			pthread_join(receiving_t, NULL);
 		}
+		
 	}
+	close(client_socket);
 	return 0;
 }
 
@@ -167,6 +182,15 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	}else {
 		free(new_acc->password);
 		free(buffer);
+		
+		pthread_t sending_t, receiving_t;
+
+		pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
+		pthread_create(&receiving_t, NULL,receiving, (void *)&new_acc);
+
+		pthread_join(sending_t, NULL);
+		pthread_join(receiving_t, NULL);
+
 		return 0;
 	}
 }
