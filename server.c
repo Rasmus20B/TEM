@@ -49,6 +49,7 @@ void message_interface(int client_socket) {
 			}
 		}
 	}
+	pthread_mutex_unlock(&mutex);
 	
 	/* extract recipient tokens with strtok
 	   
@@ -69,6 +70,8 @@ int sign_in(int client_socket) {
 
 	message = (char *)malloc(256);
 	temp_acc = (struct account*)malloc(50);
+
+	pthread_mutex_lock(&mutex);
 	
 	recv(client_socket, message, sizeof(temp_acc->username), 0);
 	recv(client_socket, message, sizeof(temp_acc->username), 0);
@@ -91,6 +94,7 @@ int sign_in(int client_socket) {
 	}else {
 		strcpy(temp_acc->password, message);
 	}
+	pthread_mutex_unlock(&mutex);
 	message_interface(client_socket);
 
 	return 0;
@@ -102,6 +106,8 @@ int create_acc(int client_socket) {
 	
 	message = (char *)malloc(256);
 	new_acc = (struct account *)malloc(50);
+
+	pthread_mutex_lock(&mutex);
 	
 	recv(client_socket, message, sizeof(new_acc->username), 0);
 		
@@ -136,6 +142,7 @@ int create_acc(int client_socket) {
 			}
 		}
 	}	
+	pthread_mutex_unlock(&mutex);
 	free(message);
 	message_interface(client_socket);
 	free(new_acc);	
@@ -161,7 +168,7 @@ void *handle(void *sock) {
 			create_acc(user.sockno);
 		}
 	}
-
+	
 	pthread_mutex_unlock(&mutex);
 
 	return 0;

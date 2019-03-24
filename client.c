@@ -29,7 +29,7 @@ struct account {
 };
 
 
-void *receiving(void *acc) {
+void *receive(void *acc) {
 
 	char *buffer;
 	struct account *user;
@@ -37,11 +37,11 @@ void *receiving(void *acc) {
 
 	buffer = (char *)malloc(256);
 	while(recv(user->cli_fd, buffer, 256, 0))
-		printf("%s\n", buffer);
-	
+		printf("%s\n", buffer);	
+	pthread_exit(NULL);
 }
 
-void *sending(void *acc) {
+int message_interface(struct account acc) {
 
 	char *buffer;
 	char *contents;
@@ -49,13 +49,12 @@ void *sending(void *acc) {
 	struct tm *info;
 	char time_buffer[20];
 	char *pos;
-
-	struct account *user;
-	user = (struct account *) acc;
+	pthread_t receive_t;
 
 	buffer = (char *)malloc(256);
 	contents = (char *)malloc(200);
-
+	
+	pthread_create(&receive_t, NULL, receive, (void *)&acc);
 	while(1) {
 		memset(buffer, '\0', strlen(buffer));
 		printf("message : ");
@@ -71,16 +70,22 @@ void *sending(void *acc) {
 
 		strftime(time_buffer, 20, "%x - %T:%M", info);
 
-		strcat(buffer, user->username);
+		strcat(buffer, acc.username);
 		strcat(buffer, " : \t");
 		strcat(buffer, contents);
 		strcat(buffer, "\t\t\t");
 		strcat(buffer, time_buffer);
 		strcat(buffer, "\n");
 		
-		send(user->cli_fd, buffer, strlen(buffer), 0);
+		send(acc.cli_fd, buffer, strlen(buffer), 0);
 		memset(buffer, '\0', strlen(buffer));
+
+		
 	}
+	if((pthread_join(receive_t, NULL)) != 0) {
+		perror("could not join thread");
+	}
+	
 }
 	
 int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
@@ -129,17 +134,17 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		}else {
 			//free memory and call messaging interface
 			free(buffer);
-			pthread_t sending_t, receiving_t;
+			message_interface(*new_acc);
+	////////	pthread_t sending_t, receiving_t;
 
-			pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
-			pthread_create(&receiving_t, NULL, receiving, (void *)&new_acc);
+	////////	pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
+	////////	pthread_create(&receiving_t, NULL, receiving, (void *)&new_acc);
 
-			pthread_join(sending_t, NULL);
-			pthread_join(receiving_t, NULL);
+	////////	pthread_join(sending_t, NULL);
+	////////	pthread_join(receiving_t, NULL);
 		}
 		
-	}
-	close(client_socket);
+	}	
 	return 0;
 }
 
@@ -183,16 +188,16 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 		free(new_acc->password);
 		free(buffer);
 		
-		pthread_t sending_t, receiving_t;
+////////	pthread_t sending_t, receiving_t;
 
-		pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
-		pthread_create(&receiving_t, NULL,receiving, (void *)&new_acc);
+////////	pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
+////////	pthread_create(&receiving_t, NULL,receiving, (void *)&new_acc);
 
-		pthread_join(sending_t, NULL);
-		pthread_join(receiving_t, NULL);
+////////	pthread_join(sending_t, NULL);
+////////	pthread_join(receiving_t, NULL);
 
-		return 0;
 	}
+	return 0;
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
