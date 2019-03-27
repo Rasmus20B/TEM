@@ -33,19 +33,24 @@ int clients[30];
 int n = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void message_interface(int client_socket) {
+void *message_interface(void *acc) {
 	
 	char buffer[256];
+	struct account *current;
+
+	current = (struct account *)acc;
 
 	while(1) {
 		memset(buffer, '\0', strlen(buffer));
 
-		while(recv(client_socket, buffer, sizeof(buffer), 0) > 0) {
+		while(recv(current->sockno, buffer, sizeof(buffer), 0) > 0) {
 		printf("%s\n", buffer);
 		pthread_mutex_lock(&mutex);
 		for(int i = 0; i <= MAXCON; i++) {
+			if(user[i].username != current->username) {
 			send(user[i].sockno, buffer, strlen(buffer), 0);	
 			memset(buffer, '\0', sizeof(buffer));
+			}
 			}
 		}
 	}
@@ -95,14 +100,13 @@ int sign_in(int client_socket) {
 		strcpy(temp_acc->password, message);
 	}
 	pthread_mutex_unlock(&mutex);
-	message_interface(client_socket);
-
 	return 0;
 }
 
 int create_acc(int client_socket) {
 	char *message;
 	struct account *new_acc;
+	pthread_t message_interface_t;
 	
 	message = (char *)malloc(256);
 	new_acc = (struct account *)malloc(50);
@@ -144,7 +148,7 @@ int create_acc(int client_socket) {
 	}	
 	pthread_mutex_unlock(&mutex);
 	free(message);
-	message_interface(client_socket);
+	pthread_create(&message_interface_t, NULL, (void *)message_interface, (void *)&new_acc);
 	free(new_acc);	
 
 	return 0;	

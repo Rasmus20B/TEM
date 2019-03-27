@@ -87,10 +87,9 @@ int message_interface(struct account acc) {
 		send(acc.cli_fd, buffer, strlen(buffer), 0);
 		memset(buffer, '\0', strlen(buffer));
 
-		pthread_join(receive_t, NULL);
+		
 		}
 	}
-
 	return 0;	
 }
 	
