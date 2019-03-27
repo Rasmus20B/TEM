@@ -28,6 +28,7 @@ struct account {
 	int cli_fd;
 };
 
+typedef pthread_t OT_THREAD_HANDLE;
 
 void *receive(void *acc) {
 
@@ -54,11 +55,14 @@ int message_interface(struct account acc) {
 	buffer = (char *)malloc(256);
 	contents = (char *)malloc(200);
 	
-	pthread_create(&receive_t, NULL, receive, (void *)&acc);
-	while(1) {
+	if(pthread_create(&receive_t, NULL, (void *)receive, (void *)&acc) != 0) {
+		perror("failed to create thread ");
+	}
+	else {
+		while(1) {
 		memset(buffer, '\0', strlen(buffer));
 		printf("message : ");
-		
+
 		fgets(contents, 202, stdin);
 
 		pos = strchr(contents, '\n');
@@ -81,11 +85,9 @@ int message_interface(struct account acc) {
 		memset(buffer, '\0', strlen(buffer));
 
 		
+		}
 	}
-	if((pthread_join(receive_t, NULL)) != 0) {
-		perror("could not join thread");
-	}
-	
+	return 0;	
 }
 	
 int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
