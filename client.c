@@ -23,9 +23,9 @@
 /* connects to server */
 
 struct account {
-	char username[20];
-	char password[20];
 	int cli_fd;
+	char username[20];
+	char password[20];	
 };
 
 typedef pthread_t OT_THREAD_HANDLE;

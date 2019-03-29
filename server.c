@@ -23,39 +23,18 @@
 struct account {
 	char username[22];
 	char password[22];
-	int sockno;
 	char ip[INET_ADDRSTRLEN];
+	int sockno;	
 };
 
 struct account user[30];
 
 int clients[30];
-int n = 0;
+int n_of_cc = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void *message_interface(void *acc) {
-	
-	char buffer[256];
-	struct account *current;
+void forward(char *buffer, int current) {
 
-	current = (struct account *)acc;
-
-	while(1) {
-		memset(buffer, '\0', strlen(buffer));
-
-		while(recv(current->sockno, buffer, sizeof(buffer), 0) > 0) {
-		printf("%s\n", buffer);
-		pthread_mutex_lock(&mutex);
-		for(int i = 0; i <= MAXCON; i++) {
-			if(user[i].username != current->username) {
-			send(user[i].sockno, buffer, strlen(buffer), 0);	
-			memset(buffer, '\0', sizeof(buffer));
-			}
-			}
-		}
-	}
-	pthread_mutex_unlock(&mutex);
-	
 	/* extract recipient tokens with strtok
 	   
 	   if 'token for recipients' length is 0
@@ -66,6 +45,48 @@ void *message_interface(void *acc) {
 		if match
 		send out socket connected with selected username */
 
+
+	pthread_mutex_lock(&mutex);
+	for(int i = 0; i < n_of_cc; i++) {
+		if(user[i].sockno != current) {
+			if(send(user[i].sockno, buffer, strlen(buffer), 0) != 0) {
+				perror("failed to send message");
+				continue;
+			
+			}
+		}
+	}
+	pthread_mutex_unlock(&mutex);	
+}
+
+void *message_interface(void *acc) {
+	
+	char buffer[256];
+	int len;
+	struct account *current;
+
+	current = (struct account *)acc;
+
+	while((len = recv(user->sockno, buffer, 256, 0)) > 0) {
+		memset(buffer, '\0', strlen(buffer));	
+		printf("%s\n", buffer);
+		forward(buffer, current->sockno);
+		memset(buffer, '\0', sizeof(buffer));	
+	}
+	pthread_mutex_lock(&mutex);
+	printf("user on %s has disconnected", current->ip);
+	for(int i = 0; i < n_of_cc; i++) {
+		if(user[i].sockno == current->sockno) {
+			int j = 1;
+			while(j < n_of_cc - 1) {
+				user[j] = user[j + 1];
+				j++;
+			}
+		}
+	}
+	n_of_cc--;
+	pthread_mutex_unlock(&mutex);
+	pthread_exit(NULL);
 }
 
 int sign_in(int client_socket) {
@@ -149,6 +170,7 @@ int create_acc(int client_socket) {
 	pthread_mutex_unlock(&mutex);
 	free(message);
 	pthread_create(&message_interface_t, NULL, (void *)message_interface, (void *)&new_acc);
+	pthread_exit(NULL);
 	free(new_acc);	
 
 	return 0;	
@@ -182,7 +204,7 @@ int main() {
 
 	 int sockfd, new_socket; //activity;
 	 struct sockaddr_in server_addr, new_addr; 
-	 pthread_t sendt, recvt;
+	 pthread_t recvt;
 	 struct account user;
 	 char ip[INET_ADDRSTRLEN];
 //	 pid_t childpid;
@@ -273,8 +295,8 @@ int main() {
 		 printf("user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
 		 user.sockno = new_socket;
 		 strcpy(user.ip, ip);
-		 clients[n] = new_socket;
-		 n++;
+		 clients[n_of_cc] = new_socket;
+		 n_of_cc++;
 		 pthread_create(&recvt, NULL, handle, &user);
 		 pthread_mutex_unlock(&mutex);
 

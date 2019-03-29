@@ -9,6 +9,15 @@ struct account {
 
 struct account a[5];
 
+
+void print_records(int n) {
+
+	for(int i = 0; i <= n - 1; i++) {
+		printf("username %s\n", a[i].username);
+	}
+	
+}
+
 int main() {
 		
 	int i = 0;
@@ -17,7 +26,7 @@ int main() {
 	
 	choice = (char *)malloc(sizeof(char));	
 
-	while(i <= 3) {
+	while(i <= 5) {
 		puts("would you like to enter a new username(1) or remove a username(2)?");
 		scanf(" %s", choice);
 		if(strcmp(choice, "Y")== 0){
@@ -28,15 +37,12 @@ int main() {
 			i++;
 		}else{
 		       break;
-		}	       
+		}	     
 	}
-	
-	for(i = 0; i <= number_of_records - 1; i++) {
-		printf("username %s\n", a[i].username);
-	}
+	print_records(number_of_records);	
 
-
-
-	
 	return 0;
+	
 }
+
+
