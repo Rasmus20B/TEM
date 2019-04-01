@@ -44,12 +44,10 @@ void forward(char *buffer, int current) {
 	        compare tokens with usernames
 		if match
 		send out socket connected with selected username */
-
-
 	pthread_mutex_lock(&mutex);
 	for(int i = 0; i < n_of_cc; i++) {
-		if(user[i].sockno != current) {
-			if(send(user[i].sockno, buffer, strlen(buffer), 0) != 0) {
+		if(clients[i] != current) {
+			if(send(clients[i], buffer, strlen(buffer), 0) < 0) {
 				perror("failed to send message");
 				continue;
 			
@@ -62,15 +60,12 @@ void forward(char *buffer, int current) {
 void *message_interface(void *acc) {
 	
 	char *buffer;
-	char *newline;
 	struct account current = *((struct account *)acc);
 
 	buffer=(char *)malloc(sizeof(char) * 200);
 
 	while((recv(current.sockno, buffer, 256, 0)) > 0) {
-		newline = strchr(buffer, '\n');
-		*newline = '\0';
-		printf("%s\n", buffer);
+		printf("\n%s\n", buffer);
 		forward(buffer, current.sockno);
 		memset(buffer, '\0', sizeof(*buffer));	
 	}
@@ -167,6 +162,9 @@ int create_acc(struct account new_acc) {
 	}	
 	pthread_mutex_unlock(&mutex);
 	free(message);
+	clients[n_of_cc] = new_acc.sockno;
+	n_of_cc++;
+
 	pthread_create(&message_interface_t, NULL, (void *)message_interface, (void *)&new_acc);
 	pthread_exit(NULL);	
 
@@ -292,8 +290,6 @@ int main() {
 		 printf("user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
 		 user.sockno = new_socket;
 		 strcpy(user.ip, ip);
-		 clients[n_of_cc] = new_socket;
-		 n_of_cc++;
 		 pthread_create(&recvt, NULL, handle, &user);
 		 pthread_mutex_unlock(&mutex);
 

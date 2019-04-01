@@ -18,6 +18,9 @@
 
 #define PORT 7272
 
+#define ANSI_COLOR_RED	"\x1b[31m"
+#define ANSI_COLOR_GREEN	"\x1b[32m"
+
 
 /* This program is the client that users interact with */
 /* connects to server */
@@ -41,6 +44,7 @@ void *receive(void *acc) {
 	while((len = recv(user->cli_fd, buffer, 256, 0)) > 0) {
 		fputs(buffer, stdout);
 		memset(buffer, '\0', sizeof(&buffer));
+		printf("\n");
 		}		
 	pthread_exit(NULL);
 }
@@ -62,10 +66,8 @@ int message_interface(struct account acc) {
 		perror("failed to create thread ");
 	}
 	else {
-		printf("you : ");
+		
 		while(fgets(contents, 202, stdin) > 0) {	
-		printf("you : ");	
-
 		newline = strchr(contents, '\n');
 		*newline = '\0';
 	
@@ -83,6 +85,9 @@ int message_interface(struct account acc) {
 		strcat(buffer, "\n");
 		
 		send(acc.cli_fd, buffer, strlen(buffer), 0);
+		printf(ANSI_COLOR_GREEN "%s", buffer);	
+
+
 		memset(buffer, '\0', strlen(buffer));
 
 		}
