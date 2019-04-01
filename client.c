@@ -41,7 +41,7 @@ void *receive(void *acc) {
 	while((len = recv(user->cli_fd, buffer, 256, 0)) > 0) {
 		fputs(buffer, stdout);
 		memset(buffer, '\0', sizeof(&buffer));
-				}	
+		}		
 	pthread_exit(NULL);
 }
 
@@ -58,15 +58,13 @@ int message_interface(struct account acc) {
 	buffer = (char *)malloc(256);
 	contents = (char *)malloc(200);
 	
-	if(pthread_create(&receive_t, NULL, (void *)receive, (void *)&acc) != 0) {
+	if(pthread_create(&receive_t, NULL, receive, (void *)&acc) != 0) {
 		perror("failed to create thread ");
 	}
 	else {
-		while(1) {
-		memset(buffer, '\0', strlen(buffer));
 		printf("you : ");
-
-		fgets(contents, 202, stdin);
+		while(fgets(contents, 202, stdin) > 0) {	
+		printf("you : ");	
 
 		newline = strchr(contents, '\n');
 		*newline = '\0';
@@ -87,9 +85,10 @@ int message_interface(struct account acc) {
 		send(acc.cli_fd, buffer, strlen(buffer), 0);
 		memset(buffer, '\0', strlen(buffer));
 
-		pthread_join(receive_t, NULL);
 		}
 	}
+	pthread_join(receive_t, NULL);	
+	close(acc.cli_fd);
 
 	return 0;	
 }
@@ -140,6 +139,7 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		}else {
 			//free memory and call messaging interface
 			free(buffer);
+			new_acc->cli_fd = client_socket;
 			message_interface(*new_acc);
 	////////	pthread_t sending_t, receiving_t;
 

@@ -61,22 +61,23 @@ void forward(char *buffer, int current) {
 
 void *message_interface(void *acc) {
 	
-	char buffer[256];
-	int len;
-	struct account *current;
+	char *buffer;
+	char *newline;
+	struct account current = *((struct account *)acc);
 
-	current = (struct account *)acc;
+	buffer=(char *)malloc(sizeof(char) * 200);
 
-	while((len = recv(user->sockno, buffer, 256, 0)) > 0) {
-		memset(buffer, '\0', strlen(buffer));	
+	while((recv(current.sockno, buffer, 256, 0)) > 0) {
+		newline = strchr(buffer, '\n');
+		*newline = '\0';
 		printf("%s\n", buffer);
-		forward(buffer, current->sockno);
-		memset(buffer, '\0', sizeof(buffer));	
+		forward(buffer, current.sockno);
+		memset(buffer, '\0', sizeof(*buffer));	
 	}
 	pthread_mutex_lock(&mutex);
-	printf("user on %s has disconnected", current->ip);
+	printf("user on %s has disconnected\n", current.ip);
 	for(int i = 0; i < n_of_cc; i++) {
-		if(user[i].sockno == current->sockno) {
+		if(user[i].sockno == current.sockno) {
 			int j = 1;
 			while(j < n_of_cc - 1) {
 				user[j] = user[j + 1];
@@ -89,89 +90,85 @@ void *message_interface(void *acc) {
 	pthread_exit(NULL);
 }
 
-int sign_in(int client_socket) {
+int sign_in(struct account temp_acc) {
 	
 	char *message;
-	struct account *temp_acc;
 
 	message = (char *)malloc(256);
-	temp_acc = (struct account*)malloc(50);
-
+	
 	pthread_mutex_lock(&mutex);
 	
-	recv(client_socket, message, sizeof(temp_acc->username), 0);
-	recv(client_socket, message, sizeof(temp_acc->username), 0);
+	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);
+	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);
 
 	if (strlen(message) > 21) { 
 			strcpy(message, "NOTOK");
-			send(client_socket, message, sizeof(message), 0);
+			send(temp_acc.sockno, message, sizeof(message), 0);
 			printf("user entered incorrect username");
 			return -1;
 	}else {
-		strcpy(temp_acc->username, message);
-		send(client_socket, message, strlen(message), 0);
+		strcpy(temp_acc.username, message);
+		send(temp_acc.sockno, message, strlen(message), 0);
 	}	
-	recv(client_socket, temp_acc->password, sizeof(temp_acc->password), 0);
+	recv(temp_acc.sockno, temp_acc.password, sizeof(temp_acc.password), 0);
 
 	if (strlen(message) > 21) {
 		strcpy(message, "NOTOK");
-		send(client_socket, message, sizeof(message),0);
+		send(temp_acc.sockno, message, sizeof(message),0);
 		return -1;
 	}else {
-		strcpy(temp_acc->password, message);
+		strcpy(temp_acc.password, message);
 	}
 	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 
-int create_acc(int client_socket) {
+int create_acc(struct account new_acc) {
+
 	char *message;
-	struct account *new_acc;
 	pthread_t message_interface_t;
 	
 	message = (char *)malloc(256);
-	new_acc = (struct account *)malloc(50);
-
+	
 	pthread_mutex_lock(&mutex);
 	
-	recv(client_socket, message, sizeof(new_acc->username), 0);
+	recv(new_acc.sockno, message, sizeof(new_acc.username), 0);
 		
 
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
-				send(client_socket, message, sizeof(message), 0);
+				send(new_acc.sockno, message, sizeof(message), 0);
 				printf("user entered incorrect username");
 				return -1;
 		}else {
-			strcpy(new_acc->username, message);
+			strcpy(new_acc.username, message);
 			strcpy(message, "OK");
-			send(client_socket, message, 2, 0);	
+			send(new_acc.sockno, message, 2, 0);	
 		}
 
-		recv(client_socket, message, sizeof(new_acc->password), 0);
+		recv(new_acc.sockno, message, sizeof(new_acc.password), 0);
 
 		if (strlen(message) > 20) {
 			strcpy(message, "NOTOK");
-			send(client_socket, message, sizeof(message), 0);			
+			send(new_acc.sockno, message, sizeof(message), 0);			
 			return -1;
 		}else {
-			strcpy(new_acc->password, message);
+			strcpy(new_acc.password, message);
 			strcpy(message, "OK");
-			send(client_socket, message, sizeof(message), 0);
+			send(new_acc.sockno, message, sizeof(message), 0);
 			for(int i = 0; i <= MAXCON; i++) {
 				if(strcmp(user[i].username, "\0") == 0) {
 					i++;
 			}else {
-				strcpy(user[i].username, new_acc->username);
-				strcpy(user[i].password, new_acc->password);
+				strcpy(user[i].username, new_acc.username);
+				strcpy(user[i].password, new_acc.password);
 			}
 		}
 	}	
 	pthread_mutex_unlock(&mutex);
 	free(message);
 	pthread_create(&message_interface_t, NULL, (void *)message_interface, (void *)&new_acc);
-	pthread_exit(NULL);
-	free(new_acc);	
+	pthread_exit(NULL);	
 
 	return 0;	
 }
@@ -186,12 +183,12 @@ void *handle(void *sock) {
 	recv(user.sockno, message, 10, 0);
 
 	if (strncmp(message, "sign_in", 7) == 0) {
-		while(sign_in(user.sockno) == -1) {
-			sign_in(user.sockno);
+		while(sign_in(user) == -1) {
+			sign_in(user);
 		}
 	}else if (strncmp(message, "create_acc", 10) == 0) {
-		while(create_acc(user.sockno) == -1) {
-			create_acc(user.sockno);
+		while(create_acc(user) == -1) {
+			create_acc(user);
 		}
 	}
 	
