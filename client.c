@@ -66,32 +66,34 @@ int message_interface(struct account acc) {
 		perror("failed to create thread ");
 	}
 	else {
+		printf("Enter a message... : ");
 		
 		while(fgets(contents, 202, stdin) > 0) {	
-		newline = strchr(contents, '\n');
-		*newline = '\0';
+			
+			newline = strchr(contents, '\n');
+			*newline = '\0';
+
+			time(&ltime);
+
+			info = localtime(&ltime);
+
+			strftime(time_buffer, 20, "%x - %T:%M", info);
+
+			strcat(buffer, acc.username);
+			strcat(buffer, " : \t");
+			strcat(buffer, contents);
+			strcat(buffer, "\t\t\t");
+			strcat(buffer, time_buffer);
+			strcat(buffer, "\n");
 	
-		time(&ltime);
-
-		info = localtime(&ltime);
-
-		strftime(time_buffer, 20, "%x - %T:%M", info);
-
-		strcat(buffer, acc.username);
-		strcat(buffer, " : \t");
-		strcat(buffer, contents);
-		strcat(buffer, "\t\t\t");
-		strcat(buffer, time_buffer);
-		strcat(buffer, "\n");
-		
-		send(acc.cli_fd, buffer, strlen(buffer), 0);
-		printf(ANSI_COLOR_GREEN "%s", buffer);	
+			send(acc.cli_fd, buffer, strlen(buffer), 0);
+			printf(ANSI_COLOR_GREEN "%s", buffer);	
 
 
-		memset(buffer, '\0', strlen(buffer));
+			memset(buffer, '\0', strlen(buffer));
 
+			}
 		}
-	}
 	pthread_join(receive_t, NULL);	
 	close(acc.cli_fd);
 
@@ -163,21 +165,27 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 		
 	char *buffer;
 	struct account *new_acc;
+	char *newline;
 
 	new_acc = (struct account*)malloc(sizeof(struct account));	
-	buffer = (char *)malloc(256);
+	buffer = (char *)calloc(sizeof(char), sizeof(char)*256);
 
-	printf("\nplease enter your username : ");
-	fgets(new_acc->username, sizeof(new_acc->username), stdin);
+	puts("please enter you username\n");
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
+
+	newline = strchr(new_acc->username, '\n');
+	*newline = '\0';
+
+
 	//sends username to server to verify
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
-	recv(client_socket, buffer, strlen(buffer), 0);
+	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {
 		puts("invalid username\n");
-		free(new_acc->username);
 		free(buffer);
 		return -1;
 	}
@@ -191,8 +199,7 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5)) {
-		printf("incorrect password");
-		free(new_acc->password);
+		printf("incorrect password");	
 		free(buffer);
 		return -1;
 	}else {
@@ -282,7 +289,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 		//get choice from user for use in menu
 		scanf(" %d", &choice);
 		if (choice == 1) {	
-			strcpy(buffer, "sign_in");
+			strcpy(buffer, "sign_in123");
 			send(client_socket, buffer, strlen(buffer), 0); //sends server message to initiate sign in process server-side
 			sign_in(client_socket);
 		}else if (choice == 2) {	

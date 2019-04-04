@@ -86,35 +86,54 @@ void *message_interface(void *acc) {
 }
 
 int sign_in(struct account temp_acc) {
+
+	/* compare input with the user[] array */
 	
 	char *message;
+	int i;
+	pthread_t message_interface_t;
+
+	fputs("it gets to sign in fine", stdout);
 
 	message = (char *)malloc(256);
 	
 	pthread_mutex_lock(&mutex);
 	
 	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);
-	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);
 
-	if (strlen(message) > 21) { 
+	fputs("it receives the message", stdout);
+
+	for(i = 0; i < 30; i++) {
+		if(strncmp(user[i].username, message, 20) == 0) {
+		strcpy(message, "OK");
+		send(temp_acc.sockno, message, sizeof(message), 0);
+		printf("user has entered %s in username field", user[i].username);
+		break;
+		}
+		else if(i == 30) {
+			printf("user entered non-existent username");
 			strcpy(message, "NOTOK");
 			send(temp_acc.sockno, message, sizeof(message), 0);
-			printf("user entered incorrect username");
 			return -1;
-	}else {
-		strcpy(temp_acc.username, message);
-		send(temp_acc.sockno, message, strlen(message), 0);
-	}	
+		}
+	}
+	
 	recv(temp_acc.sockno, temp_acc.password, sizeof(temp_acc.password), 0);
 
-	if (strlen(message) > 21) {
-		strcpy(message, "NOTOK");
-		send(temp_acc.sockno, message, sizeof(message),0);
-		return -1;
+	if(strncmp(temp_acc.password, user[i].password, 20) == 0) { 	// if password is the password for the same account [i] then good job
+		strcpy(message, "OK");
+		send(temp_acc.sockno, message, sizeof(message), 0);
 	}else {
-		strcpy(temp_acc.password, message);
+		strcpy(message, "NOTOK");
+		send(temp_acc.sockno, message, sizeof(message), 0);
+		return -1;
 	}
+	
 	pthread_mutex_unlock(&mutex);
+	free(message);
+
+	pthread_create(&message_interface_t, NULL, (void *)message_interface, (void *)&temp_acc);
+	pthread_exit(NULL);
 	return 0;
 }
 
@@ -180,7 +199,7 @@ void *handle(void *sock) {
 	
 	recv(user.sockno, message, 10, 0);
 
-	if (strncmp(message, "sign_in", 7) == 0) {
+	if (strncmp(message, "sign_in123", 10) == 0) {
 		while(sign_in(user) == -1) {
 			sign_in(user);
 		}
@@ -201,7 +220,6 @@ int main() {
 	 struct sockaddr_in server_addr, new_addr; 
 	 pthread_t recvt;
 	 struct account user;
-	 char ip[INET_ADDRSTRLEN];
 //	 pid_t childpid;
 //	 char *message;
 	 	
@@ -285,11 +303,10 @@ int main() {
 		 if(new_socket < 0) {
 			 exit(1);
 		 }
-		 pthread_mutex_lock(&mutex);	
-		 inet_ntop(AF_INET, (struct sockaddr *)&new_addr, ip, INET_ADDRSTRLEN);
+		 pthread_mutex_lock(&mutex);	 
 		 printf("user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
 		 user.sockno = new_socket;
-		 strcpy(user.ip, ip);
+		 strcpy(user.ip, inet_ntoa(new_addr.sin_addr));
 		 pthread_create(&recvt, NULL, handle, &user);
 		 pthread_mutex_unlock(&mutex);
 
