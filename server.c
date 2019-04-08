@@ -103,14 +103,14 @@ int sign_in(struct account temp_acc) {
 
 	fputs("it receives the message", stdout);
 
-	for(i = 0; i < 30; i++) {
-		if(strncmp(user[i].username, message, 20) == 0) {
+	for(i = 0; i <= 30; i++) {
+		if(strncmp(user[i].username, message, strlen(message)) == 0) {
 		strcpy(message, "OK");
 		send(temp_acc.sockno, message, sizeof(message), 0);
 		printf("user has entered %s in username field", user[i].username);
 		break;
 		}
-		else if(i == 30) {
+		else if(i == 30) {	
 			printf("user entered non-existent username");
 			strcpy(message, "NOTOK");
 			send(temp_acc.sockno, message, sizeof(message), 0);
@@ -148,6 +148,7 @@ int create_acc(struct account new_acc) {
 	
 	recv(new_acc.sockno, message, sizeof(new_acc.username), 0);
 		
+	fputs("it receives the thing fine", stdout);
 
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");

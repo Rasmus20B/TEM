@@ -184,11 +184,12 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
-	if (strncmp(buffer, "NOTOK", 5)) {
+	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		puts("invalid username\n");
 		free(buffer);
 		return -1;
 	}
+	else if (strncmp(buffer, "OK", 2) == 0) {
 	
 	puts("please enter your password\n");
 	fgets(new_acc->password, sizeof(new_acc->password), stdin);
@@ -198,7 +199,7 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	recv(client_socket, buffer, sizeof(buffer), 0);
 
 	//if reply == NOTOK then 
-	if (strncmp(buffer, "NOTOK", 5)) {
+	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		printf("incorrect password");	
 		free(buffer);
 		return -1;
@@ -214,8 +215,10 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 ////////	pthread_join(sending_t, NULL);
 ////////	pthread_join(receiving_t, NULL);
 
+		}
 	}
 	return 0;
+	
 }
 
 int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
