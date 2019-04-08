@@ -71,15 +71,7 @@ void *message_interface(void *acc) {
 	}
 	pthread_mutex_lock(&mutex);
 	printf("user on %s has disconnected\n", current.ip);
-	for(int i = 0; i < n_of_cc; i++) {
-		if(user[i].sockno == current.sockno) {
-			int j = 1;
-			while(j < n_of_cc - 1) {
-				user[j] = user[j + 1];
-				j++;
-			}
-		}
-	}
+	
 	n_of_cc--;
 	pthread_mutex_unlock(&mutex);
 	pthread_exit(NULL);
@@ -91,9 +83,7 @@ int sign_in(struct account temp_acc) {
 	
 	char *message;
 	int i;
-	pthread_t message_interface_t;
-
-	fputs("it gets to sign in fine", stdout);
+	pthread_t message_interface_t;	
 
 	message = (char *)malloc(256);
 	
@@ -114,18 +104,20 @@ int sign_in(struct account temp_acc) {
 			printf("user entered non-existent username");
 			strcpy(message, "NOTOK");
 			send(temp_acc.sockno, message, sizeof(message), 0);
+			pthread_mutex_unlock(&mutex);
 			return -1;
 		}
 	}
 	
-	recv(temp_acc.sockno, temp_acc.password, sizeof(temp_acc.password), 0);
+	recv(temp_acc.sockno, message, sizeof(temp_acc.password), 0);
 
-	if(strncmp(temp_acc.password, user[i].password, 20) == 0) { 	// if password is the password for the same account [i] then good job
+	if(strncmp(user[i].password, message, strlen(message)) == 0) { 	// if password is the password for the same account [i] then good job
 		strcpy(message, "OK");
 		send(temp_acc.sockno, message, sizeof(message), 0);
 	}else {
 		strcpy(message, "NOTOK");
 		send(temp_acc.sockno, message, sizeof(message), 0);
+		pthread_mutex_unlock(&mutex);
 		return -1;
 	}
 	
@@ -153,7 +145,7 @@ int create_acc(struct account new_acc) {
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
 				send(new_acc.sockno, message, sizeof(message), 0);
-				printf("user entered incorrect username");
+				pthread_mutex_unlock(&mutex);
 				return -1;
 		}else {
 			strcpy(new_acc.username, message);
@@ -166,13 +158,14 @@ int create_acc(struct account new_acc) {
 		if (strlen(message) > 20) {
 			strcpy(message, "NOTOK");
 			send(new_acc.sockno, message, sizeof(message), 0);			
+			pthread_mutex_unlock(&mutex);
 			return -1;
 		}else {
 			strcpy(new_acc.password, message);
 			strcpy(message, "OK");
 			send(new_acc.sockno, message, sizeof(message), 0);
 			for(int i = 0; i <= MAXCON; i++) {
-				if(strcmp(user[i].username, "\0") == 0) {
+				if(user[i].username[0] != '\0') {
 					i++;
 			}else {
 				strcpy(user[i].username, new_acc.username);

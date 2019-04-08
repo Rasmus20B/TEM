@@ -193,6 +193,10 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	
 	puts("please enter your password\n");
 	fgets(new_acc->password, sizeof(new_acc->password), stdin);
+	
+	newline = strchr(new_acc->password, '\n');
+	*newline = '\0';
+
 	//sends password to server to verify
 	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
 	//recieves reply
@@ -203,9 +207,10 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 		printf("incorrect password");	
 		free(buffer);
 		return -1;
-	}else {
-		free(new_acc->password);
+	}else {	
 		free(buffer);
+		new_acc->cli_fd = client_socket;
+		message_interface(*new_acc);
 		
 ////////	pthread_t sending_t, receiving_t;
 
