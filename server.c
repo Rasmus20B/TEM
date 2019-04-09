@@ -18,11 +18,9 @@
 #define PENDMAX 3
 #define MAXCON 30
 
-//THINK ABOUT USING STRTOK TO SEPERATE MESSAGE INTO RECIPIENTS AND CONTENTS
-
 struct account {
-	char username[22];
-	char password[22];
+	char username[20];
+	char password[20];
 	char ip[INET_ADDRSTRLEN];
 	int sockno;	
 };
@@ -31,6 +29,7 @@ struct account user[30];
 
 int clients[30];
 int n_of_cc = 0;
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void forward(char *buffer, int current) {
@@ -44,6 +43,7 @@ void forward(char *buffer, int current) {
 	        compare tokens with usernames
 		if match
 		send out socket connected with selected username */
+
 	pthread_mutex_lock(&mutex);
 	for(int i = 0; i < n_of_cc; i++) {
 		if(clients[i] != current) {
@@ -78,8 +78,6 @@ void *message_interface(void *acc) {
 }
 
 int sign_in(struct account temp_acc) {
-
-	/* compare input with the user[] array */
 	
 	char *message;
 	int i;
@@ -89,19 +87,17 @@ int sign_in(struct account temp_acc) {
 	
 	pthread_mutex_lock(&mutex);
 	
-	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);
-
-	fputs("it receives the message", stdout);
+	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);	
 
 	for(i = 0; i <= 30; i++) {
 		if(strncmp(user[i].username, message, strlen(message)) == 0) {
 		strcpy(message, "OK");
 		send(temp_acc.sockno, message, sizeof(message), 0);
-		printf("user has entered %s in username field", user[i].username);
+		printf("user has entered %s in username field\n", user[i].username);
 		break;
 		}
 		else if(i == 30) {	
-			printf("user entered non-existent username");
+			printf("user entered non-existent username\n");
 			strcpy(message, "NOTOK");
 			send(temp_acc.sockno, message, sizeof(message), 0);
 			pthread_mutex_unlock(&mutex);
@@ -111,7 +107,7 @@ int sign_in(struct account temp_acc) {
 	
 	recv(temp_acc.sockno, message, sizeof(temp_acc.password), 0);
 
-	if(strncmp(user[i].password, message, strlen(message)) == 0) { 	// if password is the password for the same account [i] then good job
+	if(strncmp(user[i].password, message, strlen(message)) == 0) {
 		strcpy(message, "OK");
 		send(temp_acc.sockno, message, sizeof(message), 0);
 	}else {
@@ -140,8 +136,6 @@ int create_acc(struct account new_acc) {
 	
 	recv(new_acc.sockno, message, sizeof(new_acc.username), 0);
 		
-	fputs("it receives the thing fine", stdout);
-
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
 				send(new_acc.sockno, message, sizeof(message), 0);
@@ -214,12 +208,8 @@ int main() {
 	 struct sockaddr_in server_addr, new_addr; 
 	 pthread_t recvt;
 	 struct account user;
-//	 pid_t childpid;
-//	 char *message;
-	 	
-	 socklen_t addr_size; 
-
-	 //message = (char *)malloc(30);
+ 	
+	 socklen_t addr_size;  
 	 
 	 system("clear");
 
@@ -233,8 +223,6 @@ int main() {
 	 else {
 		 printf("[+] socket successfully opened\n");
 	 }
-
-	 //setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
 	 server_addr.sin_family=AF_INET;
 	 server_addr.sin_port=htons(PORT);
@@ -256,43 +244,10 @@ int main() {
 			
 	//monitoring multiple clients
 
-//	 fd_set readfds;
-
 	 struct timeval select_timeout;
 	 memset(&select_timeout, '\0', sizeof(struct timeval));
 
 	 while(1) {
-	////////FD_ZERO(&readfds);
-	////////FD_SET(sockfd, &readfds);
-
-	////////activity = select(FD_SETSIZE, &readfds, NULL, NULL, &select_timeout);
-	////////if (activity < 0 && errno != EINTR)
-	////////        continue;
-
-	////////if (FD_ISSET(sockfd, &readfds)) {
-	////////        addr_size = sizeof(new_addr);
-
-	////////        if ((new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size)) < 0) {
-	////////		if (errno != MSG_DONTWAIT) {	
-	////////			continue;
-	////////		}
-	////////	perror("[-] failed to accept connection ");
-	////////	}
-
-	////////        printf("[+] user has connected on %s\n", inet_ntoa(new_addr.sin_addr));
-
-	////////        recv(new_socket, message, 10, 0);
-	////////        if (strncmp(message, "sign_in", 7) == 0) {
-	////////	       while(sign_in(new_socket, new_addr) == -1) {
-	////////	       sign_in(new_socket, new_addr);
-	////////	       }
-	////////        }
-	////////        else if (strncmp(message, "create_acc", 10) == 0) {
-	////////	       while(create_acc(new_socket, new_addr) == -1) {
-	////////	       create_acc(new_socket, new_addr); 
-	////////	       }
-	////////	}
-	///////	}	
 		 new_socket = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
 		 if(new_socket < 0) {
 			 exit(1);
@@ -302,31 +257,7 @@ int main() {
 		 user.sockno = new_socket;
 		 strcpy(user.ip, inet_ntoa(new_addr.sin_addr));
 		 pthread_create(&recvt, NULL, handle, &user);
-		 pthread_mutex_unlock(&mutex);
-
-
-	//////// if((childpid = fork()) == 0) {
-	////////	 close(sockfd);
-
-	////////	 while(1) {
-	////////		 recv(new_socket, message, 10, 0);
-	////////		 if(strncmp(message, "sign_in", 7) == 0) {
-	////////			 while(sign_in(new_socket, new_addr) == -1) {
-	////////				 sign_in(new_socket, new_addr);
-	////////			 }
-	////////		 }else if (strncmp(message, "create_acc", 10) == 0) {
-	////////				 while(create_acc(new_socket, new_addr) == -1) {
-	////////					 create_acc(new_socket, new_addr);
-	////////				 }
-	////////			 
-	////////		 
-	////////		 }
-
-
-	////////	}
-	//////// }
-
-	 	 
+		 pthread_mutex_unlock(&mutex);	 	 
 	 }
 	 return 0;
 }

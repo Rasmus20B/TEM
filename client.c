@@ -1,25 +1,27 @@
-#include <stdio.h>
+#include <stdio.h>	//used for standard library functionality including memory management
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <sys/socket.h>
+#include <sys/socket.h> // used for networking functionality
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <time.h>
+#include <time.h>	//used when assembling messages
 
-#include <openssl/crypto.h>
+#include <openssl/crypto.h>	//used for crypto functionality
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+//arbitrary port number
 #define PORT 7272
 
-#define ANSI_COLOR_RED	"\x1b[31m"
-#define ANSI_COLOR_GREEN	"\x1b[32m"
+//colours for formatting
+#define ANSI_COLOR_RED	"\x1b[31m"	
+#define ANSI_COLOR_GREEN "\x1b[32m"
 
 
 /* This program is the client that users interact with */
@@ -29,27 +31,69 @@ struct account {
 	int cli_fd;
 	char username[20];
 	char password[20];	
+	
 };
 
-typedef pthread_t OT_THREAD_HANDLE;
+char save;
+
+typedef pthread_t OT_THREAD_HANDLE;	
+
+int save_to_file(char *buffer) {
+
+	/* this function takes the buffer either from received messages or sent messages and saves them to a file "tem_log.tem" */
+
+	//save the buffer pointer to str	
+	char *str = buffer; 	
+	//pointer to log file
+	FILE *fp;
+			
+	//opening log file to append	
+	fp = fopen("tem_log.tem", "a");
+
+	//check if pointer is null
+	if(fp == NULL) {
+		//return error to user and exit
+		perror("pointer error ");
+		exit(1);
+	}
+	
+	//write the buffer to the file fp points to
+	fprintf(fp, "%s", str);
+
+	//close the file that fp points to
+	fclose(fp);
+	
+	return 0;
+}
 
 void *receive(void *acc) {
+
+	/* a new thread to enable multiplexing between receiving and sending messages */
 
 	char *buffer;
 	struct account *user;
 	user = (struct account *) acc;
 	int len;
 	
-	buffer = (char *)malloc(256);
-	while((len = recv(user->cli_fd, buffer, 256, 0)) > 0) {
+	//allocate appropriate memory to buffer
+	buffer = (char *)malloc(256);	
+
+	//while the length of the message received from server is more than 0
+	while((len = recv(user->cli_fd, buffer, 256, 0)) > 0) {	
+		//output buffer to standard output
 		fputs(buffer, stdout);
+		//reset buffer to null
 		memset(buffer, '\0', sizeof(&buffer));
+		//print a newline for formatting purposes 
 		printf("\n");
 		}		
+	//exit recieve thread
 	pthread_exit(NULL);
 }
 
 int message_interface(struct account acc) {
+
+	/* function to allow user to enter input and send it to server */
 
 	char *buffer;
 	char *contents;
@@ -58,49 +102,82 @@ int message_interface(struct account acc) {
 	char time_buffer[20];
 	char *newline;
 	pthread_t receive_t;
-
+	
+	//allocate appropriate amount of memory to both buffer and contents
 	buffer = (char *)malloc(256);
 	contents = (char *)malloc(200);
 	
+	//if the thread is not successfully created
 	if(pthread_create(&receive_t, NULL, receive, (void *)&acc) != 0) {
+		//print error message
 		perror("failed to create thread ");
 	}
+	//if the thread is successfully created
 	else {
+		printf("would you like to save messages to a local file?\t");
+		//receives input from user specifying whether or not they want to save messages
+		fgets(&save, 3, stdin);
+		
+		//set newline to the first occurance of \n in acc.save
+		newline = strchr(&save, '\n');
+		//sets the value that newline points to to \0
+		*newline = '\0';
+	
 		printf("Enter a message... : ");
 		
+		//while the user enters messages
 		while(fgets(contents, 202, stdin) > 0) {	
 			
+			//set newline to the first occurance of \n in contents
 			newline = strchr(contents, '\n');
+			//set the value that newline points to to \0
 			*newline = '\0';
-
+			
+			//call time function with appropriate variable
 			time(&ltime);
-
+			
+			//set info to system time
 			info = localtime(&ltime);
-
+			
+			//format info into string time_buffer
 			strftime(time_buffer, 20, "%x - %T:%M", info);
-
+			
+			//assemble each piece of the message into a complete buffer
 			strcat(buffer, acc.username);
 			strcat(buffer, " : \t");
 			strcat(buffer, contents);
 			strcat(buffer, "\t\t\t");
 			strcat(buffer, time_buffer);
 			strcat(buffer, "\n");
-	
+			
+			//send assembled message to server
 			send(acc.cli_fd, buffer, strlen(buffer), 0);
+			
+			//print the message to local user
 			printf(ANSI_COLOR_GREEN "%s", buffer);	
-
-
+			
+			//if the user has chosen to save messages
+			if(save == 'y') {
+				//call save_to_file function
+				save_to_file(buffer);
+			}
+			
+			//reset buffer
 			memset(buffer, '\0', strlen(buffer));
 
 			}
 		}
+	//wait for completion of recieve thread when finished
 	pthread_join(receive_t, NULL);	
+	//close socket
 	close(acc.cli_fd);
 
 	return 0;	
 }
 	
-int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
+int create_acc(int client_socket) {
+
+	/* sends new user credentials to server to be saved for sign in on return uses */
 	
 	char *buffer;
 	struct account *new_acc;
@@ -112,8 +189,11 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	buffer = (char*)calloc(sizeof(char), sizeof(char)*256);
 
 	puts("please enter your username\n"); 
+
+	//receives username from user
 	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
 	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
+	
 	//converts trailing newline left in by fgets to nullbyte
 	newline = strchr(new_acc->username, '\n');
 	*newline = '\0';
@@ -122,15 +202,18 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
 	//receives reply
 	recv(client_socket, buffer, sizeof(buffer), 0);
-	//if reply == NOTOK then 
+
+	//if reply is NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		puts("invalid username\n");
-		//free memory and return function failure
+		//return error value
 		return -1;
 	}
+	//if reply is OK
 	else if (strncmp(buffer, "OK", 2) == 0) {
 	
 		puts("please enter your password\n");
+		//receive password from user
 		fgets(new_acc->password, 22, stdin);	
 		//sends password to server to verify
 		send(client_socket, new_acc->password, strlen(new_acc->password), 0);
@@ -140,41 +223,48 @@ int create_acc(int client_socket) { //WORK ON THIS ONE FIRST
 		//if reply == NOTOK then 
 		if (strncmp(buffer, "NOTOK", 5) == 0) {
 			printf("incorrect password");
+			//frees memory allocated to password inside structure
 			free(new_acc->password);
 			return -1;
 		//if reply == OK then
 		}else {
 			//free memory and call messaging interface
 			free(buffer);
+
+			//gets new_acc ready to be passed into message interface
 			new_acc->cli_fd = client_socket;
+
+			//calls message interface
 			message_interface(*new_acc);
-	////////	pthread_t sending_t, receiving_t;
-
-	////////	pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
-	////////	pthread_create(&receiving_t, NULL, receiving, (void *)&new_acc);
-
-	////////	pthread_join(sending_t, NULL);
-	////////	pthread_join(receiving_t, NULL);
 		}
 		
 	}	
 	return 0;
 }
 
-int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF THE FUNCTION FOR SERVER
+int sign_in(int client_socket) { 
+
+	/* allows user to enter existing credentials in order to use a known username */
 		
 	char *buffer;
 	struct account *new_acc;
 	char *newline;
 
+	//allocates memory to new_acc structure
 	new_acc = (struct account*)malloc(sizeof(struct account));	
-	buffer = (char *)calloc(sizeof(char), sizeof(char)*256);
+	//allocates memory to buffer
+	buffer = (char *)calloc(sizeof(char), sizeof(char)*256);	
 
 	puts("please enter you username\n");
-	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
-	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);
-
+	
+	//recieves user input
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin);	
+	//repeat function to fix function hanging
+	fgets(new_acc->username, (sizeof(new_acc->username)+2), stdin); 
+	
+	//set newline to the first occurance of a newline in username
 	newline = strchr(new_acc->username, '\n');
+	//set the value pointed to by newline to \0
 	*newline = '\0';
 
 
@@ -183,18 +273,25 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	//receives reply
 	recv(client_socket, buffer, sizeof(buffer), 0);
 
-	//if reply == NOTOK then 
+	//if reply is NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		puts("invalid username\n");
+		//free memory allocated to buffer
 		free(buffer);
+		//returns error value
 		return -1;
 	}
+	//if reply is OK then
 	else if (strncmp(buffer, "OK", 2) == 0) {
 	
 	puts("please enter your password\n");
+
+	//receives password 
 	fgets(new_acc->password, sizeof(new_acc->password), stdin);
 	
+	//set newline to the first occurance of a newline in password
 	newline = strchr(new_acc->password, '\n');
+	//set the value pointed to by newline to \0
 	*newline = '\0';
 
 	//sends password to server to verify
@@ -205,28 +302,28 @@ int sign_in(int client_socket) { //NOT SYNCHRONOUS WITH SERVER, ADD A WAY OUT OF
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
 		printf("incorrect password");	
+		//free memory allocated to buffer
 		free(buffer);
+		//return error value
 		return -1;
 	}else {	
+		//free memory allocated to buffer
 		free(buffer);
+		//get new_acc structure ready to pass to message interface
 		new_acc->cli_fd = client_socket;
+		
+		//call message interface function
 		message_interface(*new_acc);
 		
-////////	pthread_t sending_t, receiving_t;
-
-////////	pthread_create(&sending_t, NULL, sending, (void *)&new_acc);
-////////	pthread_create(&receiving_t, NULL,receiving, (void *)&new_acc);
-
-////////	pthread_join(sending_t, NULL);
-////////	pthread_join(receiving_t, NULL);
-
 		}
 	}
 	return 0;
 	
 }
 
-int connect_to_server(char dest_ip_addr[14]) { //connects to user specified server
+int connect_to_server(char dest_ip_addr[14]) { 
+
+	/* function to connect the client to the specified server */
 	
 	int client_socket;
 	char *buffer;	
@@ -245,10 +342,11 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 ////////ctx = SSL_CTX_new (meth);
 
 	//initialises a 'sockaddr_in' structure called 'server_addr'
-	struct sockaddr_in server_addr;		
+	struct sockaddr_in server_addr;
 
-	buffer = (char *)malloc(256);
-	
+	//allocates appropriate amount of memory for buffer
+	buffer = (char *)malloc(20);	
+
 	//creates the TCP client socket
 	client_socket = socket(PF_INET, SOCK_STREAM, 0);	
 	//overwrites any memory stored in 'server_addr'
@@ -264,6 +362,7 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 	if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	
 		//prints an appropriate error message
 		perror("[-] error connecting to server ");	
+		//return error to main function
 		return  -1;
 	}
 
@@ -290,32 +389,42 @@ int connect_to_server(char dest_ip_addr[14]) { //connects to user specified serv
 /////////X509_free(server_cert);
 
 	//print menu
-	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");	
+	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");
 		
 	//call sign_in function when 1 is selected, call create_account when 2 is selected, else loop
 	while (choice == 0) {
 		//get choice from user for use in menu
 		scanf(" %d", &choice);
-		if (choice == 1) {	
+		if (choice == 1) {
+			//copies message that will notify server of sign in
 			strcpy(buffer, "sign_in123");
-			send(client_socket, buffer, strlen(buffer), 0); //sends server message to initiate sign in process server-side
-			sign_in(client_socket);
-		}else if (choice == 2) {	
-			strcpy(buffer, "create_acc");
+			//sends server message to initiate sign in process server-side
 			send(client_socket, buffer, strlen(buffer), 0);
-			create_acc(client_socket);
+			//calls sign in function 
+			sign_in(client_socket); 	
+		}else if (choice == 2) {
+			//copies message that will notify server of create account
+			strcpy(buffer, "create_acc");
+			//sends server mesage to initiate the creation of a new account	
+			send(client_socket, buffer, strlen(buffer), 0);	
+			//calls create account function
+			create_acc(client_socket);	
 		}else {
-			puts("please enter a valid choice");
-			choice = 0;
+			//notifies user to enter a different choice
+			puts("please enter a valid choice");	
+			//resets the value of choice to ensure the loop continues
+			choice = 0;	
 		}
 	}
-
-	free(buffer);
+	//frees memory taken up by buffer variable
+	free(buffer);	
 	return 0;
 
 }
 
 int main(int argc, char** argv) {
+
+	/* main function that takes address of a server to connect to */
 
 	//IP address of destination server
 	char *dest_ip_addr; 	
@@ -329,7 +438,7 @@ int main(int argc, char** argv) {
 
 	//copy command line argument to 'dest_ip_addr' variable			
 	if (argv[1] != NULL) {
-		strcpy(dest_ip_addr, argv[1]); //SECURITY FLAW
+		strncpy(dest_ip_addr, argv[1], 15);
 	}
 	
 	//while connect function fails

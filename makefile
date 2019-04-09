@@ -9,3 +9,5 @@ client: client.c
 
 server: server.c
 	$(CC) -o tem_server server.c $(CFLAGS)
+
+
