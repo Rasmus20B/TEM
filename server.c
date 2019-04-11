@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 
 #define PORT 7272
 #define PENDMAX 3
@@ -27,10 +30,97 @@ struct account {
 
 struct account user[30];
 
-int clients[30];
-int n_of_cc = 0;
+	int clients[30];
+	int n_of_cc = 0;
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+SSL_CTX *init_serverCTX() {
+
+	const SSL_METHOD *meth;
+	SSL_CTX *ctx;
+
+	OpenSSL_add_all_algorithms();
+
+	SSL_load_error_strings();
+
+	meth = TLS_method();
+	
+	ctx = SSL_CTX_new(meth);
+
+	if(ctx == NULL) {
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
+	return ctx;
+}
+
+void load_certificates(SSL_CTX *ctx, char *cert_file, char *key_file) {
+
+	if(SSL_CTX_use_certificate_file(ctx, cert_file, SSL_FILETYPE_PEM) <= 0)
+	{
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
+	if (SSL_CTX_use_PrivateKey_file(ctx, key_file, SSL_FILETYPE_PEM) <= 0) {
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
+	if (!SSL_CTX_check_private_key(ctx)) {
+		fprintf(stderr, "private key does not match the public certificate\n");
+		abort();
+	}
+}
+
+void show_certs(SSL *ssl) {
+	X509 *cert;
+	char *line;
+
+	cert = SSL_get_peer_certificate(ssl);
+	if(cert != NULL) {
+		printf("server certificates:\n");
+		line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+		printf("subject: %s\n", line);
+		free(line);
+		line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+		printf("issuer: %s\n", line);
+		free(line);
+		X509_free(cert);
+	}else {
+		printf("no certificates\n");
+	}
+}
+
+void servlet(SSL *ssl) {
+		
+	char buf[1024];
+	char reply[1024];
+	int sd, bytes;
+	const char* HTMLecho = "<html><body><pre>%s</pre></body></html>\n\n";
+
+	if(SSL_accept(ssl) == -1) {
+		ERR_print_errors_fp(stderr);
+	}
+	else {
+		show_certs(ssl);
+		bytes = SSL_read(ssl, buf, sizeof(buf));
+		if(bytes > 0) {
+			buf[bytes] = 0;
+			printf("client msg: \"%s\"\n", buf);
+			sprintf(reply, HTMLecho, buf);
+			SSL_write(ssl, reply, strlen(reply));
+		}
+		else {
+			ERR_print_errors_fp(stderr);
+		}
+	}
+	sd = SSL_get_fd(ssl);
+	SSL_free(ssl);
+	close(sd);
+}
+
+		
+		
 
 void forward(char *buffer, int current) {
 
@@ -243,13 +333,24 @@ void *handle(void *sock) {
 	/* main menu system for sign in and account creation*/
 	
 	char *message;
+	
+	SSL *ssl;
+	SSL_CTX *ctx;
 	struct account user = *((struct account *)sock);
+
+	ctx = init_serverCTX();
 	
 	//allocate appropriate memory for message
-	message = (char *)malloc(15);
+	message = (char *)malloc(256);
+
+	ssl = SSL_new(ctx);
+	SSL_set_fd(ssl, user.sockno);
+	servlet(ssl);
+
+
 	
 	//receive message from client to navigate menu
-	recv(user.sockno, message, 10, 0);
+	SSL_read(ssl, message, 10);
 
 	if (strncmp(message, "sign_in123", 10) == 0) {
 		//free allocated memory to message as it is not used again
@@ -282,8 +383,13 @@ int main() {
 	 struct account user;
  	 socklen_t addr_size;  
 	 
+	
 	 //clear the terminal
 	 system("clear");
+
+	 
+
+	 
 	
 	 //create socket and store in sockfd
 	 sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -324,7 +430,7 @@ int main() {
  		 printf("[+] listening on port %i...\n", PORT);
 	 }
 			
-	//monitoring multiple clients
+	 /*monitoring multiple clients */
 	
 	 //infinite loop
 	 while(1) {

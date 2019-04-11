@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS_INC := -lpthread -lcrypto
+CFLAGS_INC := -lpthread -lcrypto -lssl
 CFLAGS := -g -Wall $(CFLAGS_INC)
 
 all: client server
@@ -9,5 +9,3 @@ client: client.c
 
 server: server.c
 	$(CC) -o tem_server server.c $(CFLAGS)
-
-

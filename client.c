@@ -10,10 +10,8 @@
 
 #include <time.h>	//used when assembling messages
 
-#include <openssl/crypto.h>	//used for crypto functionality
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>	//crypto functionality
 #include <openssl/err.h>
 
 //arbitrary port number
@@ -34,9 +32,48 @@ struct account {
 	
 };
 
-char save;
+char save;	//used to determine whether user wants to save messages to text file
 
-typedef pthread_t OT_THREAD_HANDLE;	
+typedef pthread_t OT_THREAD_HANDLE;
+
+SSL_CTX* initCTX() {
+
+	/* function used to initialize SSL context */
+
+	const SSL_METHOD *meth;
+	SSL_CTX *ctx;
+	
+	//load cryptography algorithms 
+	OpenSSL_add_all_algorithms();
+	//load error messages for printing in case of errors
+	SSL_load_error_strings();
+	//
+	meth = TLS_method();
+	ctx = SSL_CTX_new(meth);
+	if (ctx == NULL) {
+		ERR_print_errors_fp(stderr);
+		abort();
+	}
+	return ctx;
+}
+
+void show_certs(SSL *ssl) {
+
+	X509 *cert;
+	char *line;
+
+	cert = SSL_get_peer_certificate(ssl);
+	if(cert != NULL) {
+		printf("server cetrtificates:\n");
+		line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+		printf("subject: %s\n", line);
+		free(line);
+		X509_free(cert);
+	}
+	else {
+		printf("no certificate\n");
+	}
+}
 
 int save_to_file(char *buffer) {
 
@@ -321,7 +358,7 @@ int sign_in(int client_socket) {
 	
 }
 
-int connect_to_server(char dest_ip_addr[14]) { 
+int server_connect(char dest_ip_addr[14]) { 
 
 	/* function to connect the client to the specified server */
 	
@@ -329,17 +366,10 @@ int connect_to_server(char dest_ip_addr[14]) {
 	char *buffer;	
 	int choice = 0;	
 
-////////SSL_CTX *ctx;
-////////SSL *ssl;
-////////X509 *server_cert;
-////////SSL_METHOD *meth;
-////////int err;
-////////char *str;
-
-////////OpenSSL_add_ssl_algorithms();
-////////meth = TLS_client_method();
-////////SSL_load_error_strings();
-////////ctx = SSL_CTX_new (meth);
+	SSL_CTX *ctx;
+	SSL *ssl;
+	
+	ctx = initCTX();
 
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;
@@ -349,15 +379,15 @@ int connect_to_server(char dest_ip_addr[14]) {
 
 	//creates the TCP client socket
 	client_socket = socket(PF_INET, SOCK_STREAM, 0);	
-	//overwrites any memory stored in 'server_addr'
-	memset(&server_addr, '\0', sizeof(server_addr));	
+	//overwrites any memory stored in 'server_addr' to null
+	memset(&server_addr, '\0', sizeof(server_addr));
 	// specifies family of addresses (IPv4)
-	server_addr.sin_family=AF_INET;		
+	server_addr.sin_family=AF_INET;
 	// specifies port the server will be using
-	server_addr.sin_port=htons(PORT);	 
+	server_addr.sin_port=htons(PORT); 
 	//specifies server IP address received from user
-	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);	
-	
+	server_addr.sin_addr.s_addr=inet_addr(dest_ip_addr);
+
 	//if the connect function returns -1 (fails)
 	if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {	
 		//prints an appropriate error message
@@ -367,26 +397,18 @@ int connect_to_server(char dest_ip_addr[14]) {
 	}
 
 	printf("[+] successfully connected\n");
-	
-/////////ssl = SSL_new(ctx);
-/////////SSL_set_fd(ssl, client_socket);
-/////////err = SSL_connect(ssl);
 
-/////////printf("SSL connection using %s\n", SSL_get_cipher(ssl));
+	ssl = SSL_new(ctx);
 
-/////////server_cert = SSL_get_peer_certificate(ssl);
-////////
-/////////str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
-/////////CHK_NULL(str);
-/////////Printf("\t subject: %s\n", str);
-/////////OPENSSL_free(str);
+	SSL_set_fd(ssl, client_socket);
 
-/////////str = X509_NAME_oneline(X509_get_issuer_name(server_cert), 0, 0);
-/////////CHK_NULL(str);
-/////////printf("\t issuer: %s\n", str);
-/////////OPENSSL_free(str);
+	if(SSL_connect(ssl) == -1) {
+		ERR_print_errors_fp(stderr);
+		exit(1);
+	}
 
-/////////X509_free(server_cert);
+	printf("using %s encryption\n", SSL_get_cipher(ssl));
+	show_certs(ssl);
 
 	//print menu
 	printf("sign in : 1\ncreate account : 2\njoin as guest : 3\n");
@@ -399,7 +421,7 @@ int connect_to_server(char dest_ip_addr[14]) {
 			//copies message that will notify server of sign in
 			strcpy(buffer, "sign_in123");
 			//sends server message to initiate sign in process server-side
-			send(client_socket, buffer, strlen(buffer), 0);
+			SSL_write(ssl , buffer, 0);
 			//calls sign in function 
 			sign_in(client_socket); 	
 		}else if (choice == 2) {
@@ -450,11 +472,11 @@ int main(int argc, char** argv) {
 			// receives server IP address from standard input
 			fgets(dest_ip_addr, 15, stdin);		
 			//stores the return value of 'connect to server' in cor_ip so it can be reviewed before continuing
-			cor_ip = connect_to_server(dest_ip_addr);	
+			cor_ip = server_connect(dest_ip_addr);	
 			}else {	// if user has entered IP address when opening program 	
 
-			//stores the return value of 'connect_to_server' in cor_ip so it can be reviewed before continuing
-			cor_ip = connect_to_server(dest_ip_addr);		
+			//stores the return value of 'server_connect' in cor_ip so it can be reviewed before continuing
+			cor_ip = server_connect(dest_ip_addr);		
 			if (cor_ip == -1) {
 				puts("please enter a valid ip address");
 			}
