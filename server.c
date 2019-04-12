@@ -35,6 +35,8 @@ struct account user[30];
 
 	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+
+
 SSL_CTX *init_serverCTX() {
 
 	const SSL_METHOD *meth;
@@ -334,23 +336,28 @@ void *handle(void *sock) {
 	
 	char *message;
 	
+/*	
 	SSL *ssl;
 	SSL_CTX *ctx;
+	*/
+
 	struct account user = *((struct account *)sock);
 
-	ctx = init_serverCTX();
+	/* ctx = init_serverCTX(); */
 	
 	//allocate appropriate memory for message
 	message = (char *)malloc(256);
-
+	
+	/*
 	ssl = SSL_new(ctx);
 	SSL_set_fd(ssl, user.sockno);
 	servlet(ssl);
+	*/
 
 
 	
 	//receive message from client to navigate menu
-	SSL_read(ssl, message, 10);
+	recv(user.sockno, message, 10, 0);
 
 	if (strncmp(message, "sign_in123", 10) == 0) {
 		//free allocated memory to message as it is not used again

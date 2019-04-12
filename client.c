@@ -369,13 +369,14 @@ int server_connect(char dest_ip_addr[14]) {
 	SSL_CTX *ctx;
 	SSL *ssl;
 	
-	ctx = initCTX();
-
+	
 	//initialises a 'sockaddr_in' structure called 'server_addr'
 	struct sockaddr_in server_addr;
 
 	//allocates appropriate amount of memory for buffer
 	buffer = (char *)malloc(20);	
+
+	ctx = initCTX();
 
 	//creates the TCP client socket
 	client_socket = socket(PF_INET, SOCK_STREAM, 0);	
