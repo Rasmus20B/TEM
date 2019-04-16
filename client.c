@@ -64,7 +64,7 @@ void show_certs(SSL *ssl) {
 
 	cert = SSL_get_peer_certificate(ssl);
 	if(cert != NULL) {
-		printf("server cetrtificates:\n");
+		printf("server certificates:\n");
 		line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
 		printf("subject: %s\n", line);
 		free(line);
@@ -212,7 +212,7 @@ int message_interface(struct account acc) {
 	return 0;	
 }
 	
-int create_acc(int client_socket) {
+int create_acc(int client_socket, SSL *ssl) {
 
 	/* sends new user credentials to server to be saved for sign in on return uses */
 	
@@ -236,9 +236,9 @@ int create_acc(int client_socket) {
 	*newline = '\0';
 
 	//sends username to server to verify
-	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
+	SSL_write(ssl, new_acc->username, strlen(new_acc->username));	
 	//receives reply
-	recv(client_socket, buffer, sizeof(buffer), 0);
+	SSL_read(ssl, buffer, sizeof(buffer));
 
 	//if reply is NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
@@ -253,9 +253,9 @@ int create_acc(int client_socket) {
 		//receive password from user
 		fgets(new_acc->password, 22, stdin);	
 		//sends password to server to verify
-		send(client_socket, new_acc->password, strlen(new_acc->password), 0);
+		SSL_write(ssl, new_acc->password, strlen(new_acc->password));
 		//recieves reply
-		recv(client_socket, buffer, sizeof(buffer), 0);
+		SSL_read(ssl, buffer, sizeof(buffer));
 
 		//if reply == NOTOK then 
 		if (strncmp(buffer, "NOTOK", 5) == 0) {
@@ -279,7 +279,7 @@ int create_acc(int client_socket) {
 	return 0;
 }
 
-int sign_in(int client_socket) { 
+int sign_in(int client_socket, SSL *ssl) { 
 
 	/* allows user to enter existing credentials in order to use a known username */
 		
@@ -306,9 +306,9 @@ int sign_in(int client_socket) {
 
 
 	//sends username to server to verify
-	send(client_socket,new_acc->username, strlen(new_acc->username), 0);	
+	SSL_write(ssl, new_acc->username, strlen(new_acc->username));	
 	//receives reply
-	recv(client_socket, buffer, sizeof(buffer), 0);
+	SSL_read(ssl, buffer, sizeof(buffer));
 
 	//if reply is NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
@@ -332,9 +332,9 @@ int sign_in(int client_socket) {
 	*newline = '\0';
 
 	//sends password to server to verify
-	send(client_socket, new_acc->password, strlen(new_acc->password), 0);
+	SSL_write(ssl, new_acc->password, strlen(new_acc->password));
 	//recieves reply
-	recv(client_socket, buffer, sizeof(buffer), 0);
+	SSL_read(ssl, buffer, sizeof(buffer));
 
 	//if reply == NOTOK then 
 	if (strncmp(buffer, "NOTOK", 5) == 0) {
@@ -424,14 +424,14 @@ int server_connect(char dest_ip_addr[14]) {
 			//sends server message to initiate sign in process server-side
 			SSL_write(ssl , buffer, 0);
 			//calls sign in function 
-			sign_in(client_socket); 	
+			sign_in(client_socket, ssl); 	
 		}else if (choice == 2) {
 			//copies message that will notify server of create account
 			strcpy(buffer, "create_acc");
 			//sends server mesage to initiate the creation of a new account	
-			send(client_socket, buffer, strlen(buffer), 0);	
+			SSL_write(ssl, buffer, strlen(buffer));	
 			//calls create account function
-			create_acc(client_socket);	
+			create_acc(client_socket, ssl);	
 		}else {
 			//notifies user to enter a different choice
 			puts("please enter a valid choice");	

@@ -39,7 +39,7 @@ struct account user[30];
 
 SSL_CTX *init_serverCTX() {
 
-	const SSL_METHOD *meth;
+	SSL_METHOD *meth;
 	SSL_CTX *ctx;
 
 	OpenSSL_add_all_algorithms();
@@ -59,19 +59,14 @@ SSL_CTX *init_serverCTX() {
 
 void load_certificates(SSL_CTX *ctx, char *cert_file, char *key_file) {
 
-	if(SSL_CTX_use_certificate_file(ctx, cert_file, SSL_FILETYPE_PEM) <= 0)
-	{
+	if(SSL_CTX_use_certificate_file(ctx, cert_file, SSL_FILETYPE_PEM) <= 0){
 		ERR_print_errors_fp(stderr);
 		abort();
 	}
 	if (SSL_CTX_use_PrivateKey_file(ctx, key_file, SSL_FILETYPE_PEM) <= 0) {
 		ERR_print_errors_fp(stderr);
 		abort();
-	}
-	if (!SSL_CTX_check_private_key(ctx)) {
-		fprintf(stderr, "private key does not match the public certificate\n");
-		abort();
-	}
+	}	
 }
 
 void show_certs(SSL *ssl) {
@@ -82,47 +77,16 @@ void show_certs(SSL *ssl) {
 	if(cert != NULL) {
 		printf("server certificates:\n");
 		line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-		printf("subject: %s\n", line);
+		printf("Server: %s\n", line);
 		free(line);
 		line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-		printf("issuer: %s\n", line);
+		printf("Client: %s\n", line);
 		free(line);
 		X509_free(cert);
 	}else {
 		printf("no certificates\n");
 	}
-}
-
-void servlet(SSL *ssl) {
-		
-	char buf[1024];
-	char reply[1024];
-	int sd, bytes;
-	const char* HTMLecho = "<html><body><pre>%s</pre></body></html>\n\n";
-
-	if(SSL_accept(ssl) == -1) {
-		ERR_print_errors_fp(stderr);
-	}
-	else {
-		show_certs(ssl);
-		bytes = SSL_read(ssl, buf, sizeof(buf));
-		if(bytes > 0) {
-			buf[bytes] = 0;
-			printf("client msg: \"%s\"\n", buf);
-			sprintf(reply, HTMLecho, buf);
-			SSL_write(ssl, reply, strlen(reply));
-		}
-		else {
-			ERR_print_errors_fp(stderr);
-		}
-	}
-	sd = SSL_get_fd(ssl);
-	SSL_free(ssl);
-	close(sd);
-}
-
-		
-		
+}		
 
 void forward(char *buffer, int current) {
 
@@ -187,7 +151,7 @@ void *message_interface(void *acc) {
 	pthread_exit(NULL);
 }
 
-int sign_in(struct account temp_acc) {
+int sign_in(struct account temp_acc, SSL *ssl) {
 
 	/* function for signing in to existing account */
 	
@@ -247,7 +211,7 @@ int sign_in(struct account temp_acc) {
 	return 0;
 }
 
-int create_acc(struct account new_acc) {
+int create_acc(struct account new_acc, SSL *ssl) {
 
 	/* function for account creation */
 
@@ -261,12 +225,12 @@ int create_acc(struct account new_acc) {
 	pthread_mutex_lock(&mutex);
 	
 	//receive temporary username 
-	recv(new_acc.sockno, message, sizeof(new_acc.username), 0);
+	SSL_read(ssl, message, sizeof(new_acc.username));
 		
 		//if username is too long then send back error message to client
 		if (strlen(message) > 20) { 
 				strcpy(message, "NOTOK");
-				send(new_acc.sockno, message, sizeof(message), 0);
+				SSL_write(ssl, message, sizeof(message));
 				//unlock thread so other clients on other threads can enter function
 				pthread_mutex_unlock(&mutex);
 				//return error value value to calling function
@@ -276,17 +240,17 @@ int create_acc(struct account new_acc) {
 			strcpy(new_acc.username, message);
 			//copy OK into message to send to client
 			strcpy(message, "OK");
-			send(new_acc.sockno, message, 2, 0);	
+			SSL_write(ssl, message, 2);	
 		}
 		
 		//receieve password from client
-		recv(new_acc.sockno, message, sizeof(new_acc.password), 0);
+		SSL_read(ssl, message, sizeof(new_acc.password));
 		
 		//if password is too long
 		if (strlen(message) > 20) {
 			//copy NOTOK to message to send to client
 			strcpy(message, "NOTOK");
-			send(new_acc.sockno, message, sizeof(message), 0);			
+			SSL_write(ssl, message, sizeof(message));			
 			//unlock thread to allow other clients to enter threads after function error
 			pthread_mutex_unlock(&mutex);
 			//return error value
@@ -296,7 +260,7 @@ int create_acc(struct account new_acc) {
 			strcpy(new_acc.password, message);
 			//copy OK into message to send to client
 			strcpy(message, "OK");
-			send(new_acc.sockno, message, sizeof(message), 0);
+			SSL_write(ssl, message, sizeof(message));
 
 			/* interative loop through central array of records */
 
@@ -336,42 +300,47 @@ void *handle(void *sock) {
 	
 	char *message;
 	
-/*	
+
 	SSL *ssl;
 	SSL_CTX *ctx;
-	*/
+	
 
 	struct account user = *((struct account *)sock);
 
-	/* ctx = init_serverCTX(); */
+	ctx = init_serverCTX();
+
+	load_certificates(ctx, "cert.pem", "privkey.pem");
 	
 	//allocate appropriate memory for message
 	message = (char *)malloc(256);
 	
-	/*
+	
 	ssl = SSL_new(ctx);
 	SSL_set_fd(ssl, user.sockno);
-	servlet(ssl);
-	*/
+
+	if(SSL_accept(ssl) == -1) {
+		ERR_print_errors_fp(stderr);
+	}
+	else {
+		show_certs(ssl);
+		*message = SSL_read(ssl, message, sizeof(message));
+	}
 
 
-	
-	//receive message from client to navigate menu
-	recv(user.sockno, message, 10, 0);
-
+	//receive message from client to navigate menu	
 	if (strncmp(message, "sign_in123", 10) == 0) {
 		//free allocated memory to message as it is not used again
 		free(message);
 		//loop sign in function while it returns error
-		while(sign_in(user) == -1) {
-			sign_in(user);
+		while(sign_in(user, ssl) == -1) {
+			sign_in(user, ssl);
 		}
 	}else if (strncmp(message, "create_acc", 10) == 0) {
 		//free allocated memory to message as it is not used again
 		free(message);
 		//loop create account function while it returns error
-		while(create_acc(user) == -1) {
-			create_acc(user);
+		while(create_acc(user, ssl) == -1) {
+			create_acc(user, ssl);
 		}
 	}
 	
@@ -456,7 +425,8 @@ int main() {
 		 strcpy(user.ip, inet_ntoa(new_addr.sin_addr));
 		 //create new threat to handle multiple clients interacting with menu
 		 pthread_create(&handle_t, NULL, handle, &user);
-		 pthread_mutex_unlock(&mutex);	 	 
+		 pthread_mutex_unlock(&mutex);
+		 
 	 }
 	 return 0;
 }
