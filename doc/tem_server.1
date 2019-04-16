@@ -7,6 +7,6 @@ TEM Server \- Server for The Encrypted Messenger
 .I TEM_Server 
 is the server which 
 .I TEM 
-clients connect to. It includes capabilities for account creation and encryption.
+clients connect to. It includes capabilities for account creation and encryption. Generate keys and certificate with "openssl req -x509 -newkey rsa:4096 -out cert.pem -outform PEM -days 1825".
 .SH "SEE ALSO"
-tem(1)
+tem(1), openssl(1)
