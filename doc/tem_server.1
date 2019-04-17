@@ -7,6 +7,12 @@ TEM Server \- Server for The Encrypted Messenger
 .I TEM_Server 
 is the server which 
 .I TEM 
-clients connect to. It includes capabilities for account creation and encryption. Generate keys and certificate with "openssl req -x509 -newkey rsa:4096 -out cert.pem -outform PEM -days 1825".
+clients connect to. It includes capabilities for account creation and encryption. Generate keys using openssl with the command:
+.PP
+.B openssl genrsa -out privkey.pem 4096
+.PP
+and generate your certificate using openssl with the command:
+.PP
+.B openssl -req -new -x509 -nodes -days 3600 -key privkey.pem -out cert.pem
 .SH "SEE ALSO"
 tem(1), openssl(1)
