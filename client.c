@@ -428,6 +428,7 @@ int server_connect(char dest_ip_addr[14]) {
 		}else if (choice == 2) {
 			//copies message that will notify server of create account
 			strcpy(buffer, "create_acc");
+			printf("%s\n", buffer);
 			//sends server mesage to initiate the creation of a new account	
 			SSL_write(ssl, buffer, strlen(buffer));	
 			//calls create account function
