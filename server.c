@@ -123,7 +123,7 @@ void *message_interface(void *acc) {
 	char *buffer;
 	//reference pointer to structure acc so it can be used in function
 	struct account current = *((struct account *)acc);
-	
+
 	//allocate memory to buffer
 	buffer=(char *)malloc(256);
 	
@@ -158,49 +158,59 @@ int sign_in(struct account temp_acc, SSL *ssl) {
 	char *message;
 	int i;
 	pthread_t message_interface_t;
-	
+			
+	pthread_mutex_lock(&mutex);	
+
 	//allocate memory for message
 	message = (char *)malloc(256);	
 	
-	//receive username from client
-	recv(temp_acc.sockno, message, sizeof(temp_acc.username), 0);	
+	//securely receive username from client
+	SSL_read(ssl, message, sizeof(temp_acc.username));	
 	
 	/* loop through array of records to check if username is already stored */
+
 	for(i = 0; i <= MAXCON; i++) {
 		//compare message to record username
 		if(strncmp(user[i].username, message, strlen(message)) == 0) {
 		//if message and stored username are the same, send OK to client
 		strcpy(message, "OK");
-		send(temp_acc.sockno, message, sizeof(message), 0);
+		//securely reply that the user entered a valid username
+		SSL_write(ssl, message, sizeof(message)); 
+		//notify server who is trying to log in
 		printf("user has entered %s in username field\n", user[i].username);
 		//exit loop
 		break;
 		}
 		//if loop reaches end of array 
-		else if(i == MAXCON) {	
+		else if(i == MAXCON) {
 			printf("user entered non-existent username\n");
 			//send NOTOK to user
 			strcpy(message, "NOTOK");
-			send(temp_acc.sockno, message, sizeof(message), 0);	
+			//securely reply that the user entered an invalid username
+			SSL_write(ssl, message, sizeof(message));	
 			//return error value
 			return -1;
 		}
 	}
 	//receive password from client
-	recv(temp_acc.sockno, message, sizeof(temp_acc.password), 0);
+	SSL_read(ssl, message, sizeof(temp_acc.password));
 	
 	//use i from previous loop to check if message is same as record's password
 	if(strncmp(user[i].password, message, strlen(message)) == 0) {
 		//if there is a match, send OK to client
 		strcpy(message, "OK");
-		send(temp_acc.sockno, message, sizeof(message), 0);
+		//securely reply that user has entered an valid password
+		SSL_write(ssl, message, sizeof(message));
 	}else {
 		//if there is no match, send NOTOK to client
 		strcpy(message, "NOTOK");
-		send(temp_acc.sockno, message, sizeof(message), 0);	
+		//securely reply that user has entered an invalid password
+		SSL_write(ssl, message, sizeof(message));	
 		//return error value
 		return -1;
 	}
+
+	pthread_mutex_unlock(&mutex);
 	//free memory allocated to message	
 	free(message);
 	//create new thread for messaging interface and pass temp account details to it 
@@ -329,18 +339,18 @@ void *handle(void *sock) {
 	}
 
 	//receive message from client to navigate menu	
-	SSL_read(ssl, message, sizeof(message));
+	if(SSL_read(ssl, message, sizeof(message)) < 0) {
+		perror("ssl error");
+	}
 
-	printf("%s\n", message);
-
-	if (strncmp(message, "sign_in123", 10) == 0) {
+	if (strncmp(message, "sign_in", 7) == 0) {
 		//free allocated memory to message as it is not used again
 		free(message);
 		//loop sign in function while it returns error
 		while(sign_in(user, ssl) == -1) {
 			sign_in(user, ssl);
 		}
-	}else if (strncmp(message, "create_acc", 10) == 0) {
+	}else if (strncmp(message, "creac", 5) == 0) {
 		//free allocated memory to message as it is not used again
 		free(message);
 		//loop create account function while it returns error

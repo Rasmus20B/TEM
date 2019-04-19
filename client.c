@@ -420,17 +420,20 @@ int server_connect(char dest_ip_addr[14]) {
 		scanf(" %d", &choice);
 		if (choice == 1) {
 			//copies message that will notify server of sign in
-			strcpy(buffer, "sign_in123");
+			strcpy(buffer, "sign_in");
 			//sends server message to initiate sign in process server-side
-			SSL_write(ssl , buffer, 0);
+			SSL_write(ssl, buffer, sizeof(buffer));
 			//calls sign in function 
 			sign_in(client_socket, ssl); 	
 		}else if (choice == 2) {
 			//copies message that will notify server of create account
-			strcpy(buffer, "create_acc");
+			strcpy(buffer, "creac");
 			printf("%s\n", buffer);
 			//sends server mesage to initiate the creation of a new account	
-			SSL_write(ssl, buffer, strlen(buffer));	
+			if(SSL_write(ssl, buffer, sizeof(buffer)) < 0) {
+				perror("ssl write error");
+			}
+					
 			//calls create account function
 			create_acc(client_socket, ssl);	
 		}else {
